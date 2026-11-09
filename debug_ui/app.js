@@ -13,15 +13,15 @@ let durationRangeSupported = false;
 let efficiencyControlsSupported = false;
 let periodicHeartbeatSupported = false;
 let deviceProfiles = [], deviceProfilesReady = false, runActive = false;
+let deviceGenerationRules = null;
 
 function renderDevicePreview() {
   const live = $('mode').value === 'live';
   const selected = deviceProfiles.find(profile => profile.id === $('device-profile').value);
-  const shown = selected ? [selected] : deviceProfiles.filter(profile => profile.synthetic);
-  $('device-preview').textContent = shown.map(profile => `${profile.label}\n${JSON.stringify({app_version:profile.app_version,android_version:profile.android_version,...profile.common,UserAgent:profile.user_agent},null,2)}`).join('\n\n');
-  const fixtures = deviceProfiles.filter(profile => profile.synthetic);
-  const versions = [...new Set(fixtures.map(profile => profile.app_version))].join(' / ');
-  $('device-note').textContent = `共 ${fixtures.length} 套测试配置，版本 ${versions}。运行时随机获取设备会在每轮启动时抽取整套配置，本轮保持一致，可能重复。${live?'真实播放将使用选中的参数请求实际接口；生成参数不代表已验证的真实客户端。':'离线演示使用本地响应。'}`;
+  $('device-preview').textContent = selected
+    ? `${selected.label}\n${JSON.stringify({app_version:selected.app_version,android_version:selected.android_version,...selected.common,UserAgent:selected.user_agent},null,2)}`
+    : JSON.stringify(deviceGenerationRules || {说明:'服务尚未提供生成规则，请刷新页面或更新本地服务'},null,2);
+  $('device-note').textContent = (selected ? '指定配置会重复使用，适合复现测试。' : '每轮动态生成新的合成型号与 Android/SDK 配对；固定 APK 1.8.9，本轮参数保持一致。') + (live?'真实播放将使用选中的参数请求实际接口；合成设备不代表已验证的真实客户端。':'离线演示使用本地响应。');
   const needsConfirmation = live && selected?.id === 'original-tv';
   $('device-confirmation').hidden = !needsConfirmation;
   $('device-confirmed').required = needsConfirmation;
@@ -30,7 +30,7 @@ function refreshDeviceOptions() {
   const previous = $('device-profile').value;
   const live = $('mode').value === 'live';
   const options = deviceProfiles.map(profile => [profile.id, profile.label]);
-  options.unshift(['random-device', '运行时随机获取设备（每轮从 10 套中抽取）']);
+  options.unshift(['random-device', '动态生成测试设备（每轮新配置 · APK 1.8.9）']);
   $('device-profile').replaceChildren(...options.map(([value, label]) => {const option = element('option', '', label); option.value = value; return option;}));
   $('device-profile').value = options.some(([value]) => value === previous) ? previous : (live ? 'original-tv' : 'random-device');
   $('device-confirmed').checked = false;
@@ -311,7 +311,12 @@ async function poll() {
     $('run-dir').textContent=data.run_dir || '每次启动保留独立运行目录';
     lastState=data.state;$('state').textContent=lastState?format(lastState,true):'尚未生成 state.json';
     runActive=Boolean(data.running);
-    $('device-effective').textContent=workers.filter(w=>w.device_profile).map(w=>`第 ${w.lane} 路 / 第 ${w.round} 轮：${w.device_profile.label} · ${['random-device','random-offline'].includes(w.device_profile.selection)?'随机抽取':'指定配置'} · ${w.device_profile.common.model}`).join('；') || '尚未生成本轮设备配置';
+    $('device-effective').textContent=workers.filter(w=>w.device_profile).map(w=>`第 ${w.lane} 路 / 第 ${w.round} 轮：${w.device_profile.label} · ${w.device_profile.generation_version?'动态生成':'指定配置'} · ${w.device_profile.common.model}`).join('；') || '尚未生成本轮设备配置';
+    const effectiveWorker=workers.find(w=>w.lane===Number($('debug-lane').value)) || workers[0];
+    const effectiveProfile=effectiveWorker?.device_profile;
+    $('device-effective-preview').textContent=effectiveProfile
+      ? `第 ${effectiveWorker.lane} 路 / 第 ${effectiveWorker.round} 轮\n${JSON.stringify({app_version:effectiveProfile.app_version,android_version:effectiveProfile.android_version,...effectiveProfile.common,UserAgent:effectiveProfile.user_agent,generation_seed:effectiveProfile.generation_seed},null,2)}`
+      : '启动后显示实际参数。';
     $('device-profile').disabled=data.running || !deviceProfilesReady;
     $('device-confirmed').disabled=data.running;
     $('start').disabled=data.running || busy || !deviceProfilesReady;
@@ -361,7 +366,7 @@ $('mode').dispatchEvent(new Event('change'));
 $('mode').addEventListener('change',()=>{if(deviceProfilesReady)refreshDeviceOptions();});
 $('device-profile').addEventListener('change',()=>{$('device-confirmed').checked=false;renderDevicePreview();});
 api('/api/device-profiles').then(data=>{
-  deviceProfiles=data.profiles;deviceProfilesReady=true;refreshDeviceOptions();
+  deviceProfiles=data.profiles;deviceGenerationRules=data.generation_rules;deviceProfilesReady=true;refreshDeviceOptions();
   $('device-profile').disabled=runActive;$('start').disabled=runActive || busy;
 }).catch(showError);
 ['repeat','concurrency'].forEach(id=>$(id).addEventListener('input',()=>{

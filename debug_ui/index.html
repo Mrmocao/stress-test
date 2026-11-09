@@ -28,6 +28,7 @@
     <pre id="device-preview" aria-label="配置参数预览"></pre>
     <label id="device-confirmation" class="device-confirmation" hidden><input id="device-confirmed" type="checkbox" form="launch">我已核对以上参数与实际客户端一致（原有配置未经程序核验）</label>
     <p id="device-effective" role="status">尚未启动；运行后显示实际选择。</p>
+    <details><summary>查看当前路实际参数</summary><pre id="device-effective-preview" aria-label="当前路实际设备参数">启动后显示实际参数。</pre></details>
   </section>
   <section class="proxy-panel" aria-label="公网 IP 切换">
     <div class="proxy-option"><label class="check"><input id="new-ip" type="checkbox" form="launch">每轮获取新公网 IP</label><label class="retry-field">IP 额外重试<input id="ip-retries" type="number" form="launch" min="0" max="3" step="1" value="0" required></label><span id="proxy-note">默认不额外重试；每次重新提取都可能消耗额度。</span></div>
