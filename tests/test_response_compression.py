@@ -78,7 +78,7 @@ class CompressionTests(unittest.TestCase):
         thread.start()
         try:
             with tempfile.TemporaryDirectory() as folder, \
-                 patch.object(tv,'API_ROOT',f'http://127.0.0.1:{server.server_port}'), \
+                 patch.object(tv,'API_ROOT',f'http://127.0.0.1:{server.server_port}'), patch.object(tv,'WEB_API_ROOT',f'http://127.0.0.1:{server.server_port}'), \
                  patch.object(tv,'HTTP_OPENER',urllib.request.build_opener(urllib.request.ProxyHandler({}))), \
                  patch.object(tv,'RUN_BUDGET',ExecutionBudget(time.monotonic()+90,45)):
                 self.assertEqual(tv.public_json('/x/web-interface/view'),{'value':'ok'})

@@ -15,7 +15,8 @@ if ($debugListener) {
 }
 $debugLogs = Join-Path $PSScriptRoot '.debug-server'
 New-Item -ItemType Directory -Path $debugLogs -Force | Out-Null
-$debugProcess = Start-Process -FilePath $debugPython -ArgumentList @('-u', 'debug_server.py', '--port', $Port) -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $debugLogs 'stdout.log') -RedirectStandardError (Join-Path $debugLogs 'stderr.log')
-$debugProcess.Id | Set-Content -LiteralPath (Join-Path $debugLogs 'server.pid') -Encoding ascii
+$debugWorkdir = (Resolve-Path -LiteralPath $PSScriptRoot).ProviderPath
+$debugProcess = Start-Process -FilePath $debugPython -ArgumentList @('-u', 'debug_server.py', '--port', $Port) -WorkingDirectory $debugWorkdir -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $debugLogs "stdout-$Port.log") -RedirectStandardError (Join-Path $debugLogs "stderr-$Port.log")
+$debugProcess.Id | Set-Content -LiteralPath (Join-Path $debugLogs "server-$Port.pid") -Encoding ascii
 Write-Host "Runtime inspector: http://127.0.0.1:$Port"
 Write-Host "Server PID: $($debugProcess.Id). Close with Stop-Process -Id $($debugProcess.Id) after stopping active playback in the page."

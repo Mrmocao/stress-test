@@ -195,6 +195,8 @@ class ProxyTransportTests(unittest.TestCase):
                         body = media.read_bytes()
                     elif path == '/x/web-interface/view':
                         body = json.dumps({'code': 0, 'data': {'aid': 1, 'cid': 2, 'state': 0, 'stat': {'view': 0}}}).encode()
+                    elif path == '/x/click-interface/click/now':
+                        body = b'{"code":0,"data":{"now":1700000000}}'
                     elif path == '/x/tv/playurl':
                         body = json.dumps({'code': 0, 'data': {'durl': [{'url': 'http://media.example.invalid/fixture.mp4'}], 'timelength': 3000, 'quality': 16}}).encode()
                     else:
@@ -223,7 +225,7 @@ class ProxyTransportTests(unittest.TestCase):
             try:
                 client = tv.TVClient(root / 'private', root / 'events.jsonl', buvid='fixture')
                 state = {'attempts': {}, 'ftime': 1}
-                with patch.dict(os.environ, {'no_proxy': '*', 'NO_PROXY': '*'}), patch.object(tv, 'API_ROOT', 'http://api.example.invalid'), patch.object(tv, 'HTTP_OPENER', lease.opener()), patch.object(tv, 'HTTP_PROXY', lease.url), patch.object(sys, 'stdout', io.StringIO()):
+                with patch.dict(os.environ, {'no_proxy': '*', 'NO_PROXY': '*'}), patch.object(tv, 'API_ROOT', 'http://api.example.invalid'), patch.object(tv, 'WEB_API_ROOT', 'http://api.example.invalid'), patch.object(tv, 'HTTP_OPENER', lease.opener()), patch.object(tv, 'HTTP_PROXY', lease.url), patch.object(sys, 'stdout', io.StringIO()):
                     result = tv.play_one(client, {'bvid': 'BV0000000000', 'aid': 1}, state, root, 1)
                 self.assertEqual(result['status'], 'completed', result)
                 self.assertTrue(result['audio_decoded'])

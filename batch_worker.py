@@ -91,6 +91,7 @@ def run_lane(args, relay, lane, publish, wait):
                    '--video', args.video, '--seconds', str(round_seconds), '--run-dir', str(directory),
                    '--ip-retries', str(max(0, allocated-1) if args.new_ip else getattr(args, 'ip_retries', 0))]
         command.extend(['--device-profile', getattr(args, 'device_profile', 'original-tv')])
+        command.extend(['--client-slot', f'lane-{lane:02d}'])
         command.extend(['--heartbeat-interval', str(getattr(args, 'heartbeat_interval', 0))])
         if getattr(args, 'device_confirmed', False):
             command.append('--device-confirmed')

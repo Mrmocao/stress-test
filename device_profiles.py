@@ -1,5 +1,6 @@
 """Whole-client test profiles, selected once per worker in demo or live mode."""
 from copy import deepcopy
+import json
 import secrets
 
 BASELINE = 'original-tv'
@@ -19,8 +20,10 @@ def _profile(key, label, model, android, sdk, os_build, *, synthetic, version='1
         'common': {'platform': 'android', 'mobi_app': 'android_tv_yst', 'build': build,
                    'channel': 'master', 'sys_ver': sdk,
                    'brand': 'offline-fixture' if synthetic else 'xiaomi', 'model': model,
-                   'teenager_mode': '0', 'child_lock': '0'},
-        'user_agent': f'BiliDroid/{version} (Linux; U; Android {android}; zh_CN; {model} Build/{os_build}) mobi_app/android_tv_yst build/{build} channel/master',
+                   'teenager_mode': '0', 'child_lock': '0',
+                   'statistics': json.dumps({'appId': '18', 'platform': '3', 'version': build}, separators=(',', ':')),
+                   **({'build_sn': '29938492'} if version == '1.8.9' else {})},
+        'user_agent': f'Mozilla/5.0 BiliTV/{version} os/android model/{model} mobi_app/android_tv_yst build/{build} channel/master innerVer/{build} osVer/{android} network/2',
     }
 
 

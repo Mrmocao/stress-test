@@ -46,6 +46,9 @@ class ReadRetryTests(unittest.TestCase):
         self.thread.start()
         # Origin intentionally cannot resolve: both attempts must use this proxy.
         opener = ProxyLease(f'127.0.0.1:{self.server.server_port}').opener()
+        self.web_patch = patch.object(tv, 'WEB_API_ROOT', 'http://origin.invalid')
+        self.web_patch.start()
+        self.addCleanup(self.web_patch.stop)
         self.patches = [
             patch.object(tv, 'API_ROOT', 'http://origin.invalid'),
             patch.object(tv, 'open_network', side_effect=lambda request, timeout: opener.open(request, timeout=0.2)),

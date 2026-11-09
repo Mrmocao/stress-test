@@ -41,7 +41,7 @@ class DeviceProfileTests(unittest.TestCase):
             common = selected['common']
             self.assertIn(common['model'], selected['user_agent'])
             self.assertIn('build/' + common['build'], selected['user_agent'])
-            self.assertIn('BiliDroid/' + selected['app_version'], selected['user_agent'])
+            self.assertIn('BiliTV/' + selected['app_version'], selected['user_agent'])
             self.assertEqual(common['sys_ver'], {'8.1':'27', '9':'28', '10':'29', '11':'30', '12':'31', '13':'33'}[selected['android_version']])
             self.assertEqual(common['build'], profiles.SIMULATED_VERSIONS[selected['app_version']])
             self.assertEqual(profiles.resolve_profile('live', key)['id'], key)
@@ -50,12 +50,13 @@ class DeviceProfileTests(unittest.TestCase):
             self.assertNotEqual(profiles.resolve_profile('demo', key)['common']['model'], 'mutated')
 
     def test_default_profile_preserves_existing_client_parameters(self):
-        self.assertEqual(tv.UA, 'BiliDroid/1.8.9 (Linux; U; Android 9; zh_CN; MiTV-ASTP0 Build/P) mobi_app/android_tv_yst build/108900 channel/master')
+        self.assertEqual(tv.UA, 'Mozilla/5.0 BiliTV/1.8.9 os/android model/MiTV-ASTP0 mobi_app/android_tv_yst build/108900 channel/master innerVer/108900 osVer/9 network/2')
         with tempfile.TemporaryDirectory() as folder:
             client = tv.TVClient(Path(folder), Path(folder) / 'events.jsonl', buvid='test')
             self.assertEqual(client.common, {'platform':'android', 'mobi_app':'android_tv_yst',
                 'build':'108900', 'channel':'master', 'sys_ver':'28', 'brand':'xiaomi',
-                'model':'MiTV-ASTP0', 'teenager_mode':'0', 'child_lock':'0'})
+                'model':'MiTV-ASTP0', 'teenager_mode':'0', 'child_lock':'0', 'build_sn':'29938492',
+                'statistics':'{"appId":"18","platform":"3","version":"108900"}'})
 
     def test_worker_rejects_unknown_profile_before_creating_run_directory(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -42,6 +42,8 @@ class PeriodicHeartbeatTests(unittest.TestCase):
             clock = [0.0]
             view = dict(bvid='BV0000000000', aid=1, cid=2, state=0, stat={'view': 0})
             def request(path, params, kind='GET'):
+                if path == '/x/click-interface/click/now':
+                    return {'code': 0, 'data': {'now': 1700000000}}
                 if path == '/x/tv/playurl':
                     return {'data': {'durl': [{'url': 'http://127.0.0.1/fixture'}],
                                      'timelength': 60000, 'quality': 16}}
@@ -84,6 +86,9 @@ class PeriodicHeartbeatTests(unittest.TestCase):
                          [('start', 0), ('periodic', 15), ('periodic', 30), ('end', 45)])
         self.assertEqual(len({b['session'] for _, b in requests}), 1)
         self.assertEqual(len({b['start_ts'] for _, b in requests}), 1)
+        self.assertTrue(all(b['video_duration'] == 60 and 'duration' not in b for _, b in requests))
+        self.assertTrue(all(b['paused_time'] == 0 for _, b in requests))
+        self.assertTrue(all('sid' not in b for _, b in requests))
 
     def test_periodic_failure_keeps_decoding_and_end_report_but_is_not_success(self):
         result, requests = self.simulate(fail_phase='periodic')

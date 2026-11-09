@@ -163,6 +163,8 @@ class CleanupTests(unittest.TestCase):
             client = Mock(private_dir=private, appkey='fixture')
             heartbeats = []
             def request(path, *args):
+                if path == '/x/click-interface/click/now':
+                    return {'code': 0, 'data': {'now': 1700000000}}
                 if path == '/x/tv/playurl':
                     return {'data': {'durl': [{'url': f'http://127.0.0.1:{self.server.server_port}/fixture.mp4'}],
                                      'timelength': target * 1000, 'quality': 16}}

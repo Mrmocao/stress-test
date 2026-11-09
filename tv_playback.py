@@ -23,7 +23,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from local_signing import APP_KEY, sign_query
 from buvid_lab import generate_buvid, generate_mac
-from did_lab import generate_local_identity
+from client_state import ClientState
+from tv_media import select_media, decoder_command
 from playback_runtime import ffmpeg_executable, lock_experiment
 from execution_budget import BudgetExceeded
 from device_profiles import baseline_profile
@@ -32,7 +33,10 @@ from playback_heartbeat import HeartbeatSchedule, heartbeat_interval
 ROOT = Path(__file__).resolve().parent
 DEVICE_PROFILE = baseline_profile()
 UA = DEVICE_PROFILE['user_agent']
-API_ROOT = 'https://api.bilibili.com'
+API_ROOT = 'https://api.snm0516.aisee.tv'
+WEB_API_ROOT = 'https://api.bilibili.com'
+CLIENT_STATE_MODE = 'live'
+CLIENT_STATE_SLOT = 'default'
 HTTP_OPENER = None
 HTTP_PROXY = None
 NETWORK_OBSERVER = None
@@ -203,7 +207,7 @@ def public_json(path):
 
 
 def _public_json_once(path, attempt, max_attempts):
-    req = urllib.request.Request(API_ROOT + path, headers={'User-Agent': UA, 'Accept-Encoding': 'gzip'})
+    req = urllib.request.Request(WEB_API_ROOT + path, headers={'User-Agent': UA, 'Accept-Encoding': 'gzip'})
     started = time.monotonic()
     event = {'path': urllib.parse.urlsplit(path).path, 'method': 'GET',
              'attempt': attempt, 'max_attempts': max_attempts, 'phase': 'connecting'}
@@ -264,7 +268,8 @@ class TVClient:
         self.counter = len(list(private_dir.glob('request-*.json')))
         self.common = dict(DEVICE_PROFILE['common'])
         self.appkey = APP_KEY
-        # Generate once per client/run; reuse across playurl, heartbeat and click.
+        self.request_session = uuid.uuid4().hex
+        # Playback entry points supply the persisted test-client Buvid.
         # An explicit empty string preserves legacy experiments without this header.
         self.buvid = generate_buvid('mac', generate_mac()) if buvid is None else buvid
 
@@ -281,7 +286,8 @@ class TVClient:
         index = self.counter
         payload = None
         url = API_ROOT + path
-        headers = {'User-Agent': UA, 'Accept-Encoding': 'gzip'}
+        headers = {'User-Agent': UA, 'Accept-Encoding': 'gzip',
+                   'App-Key': 'android_tv_yst', 'env': 'prod', 'session-id': self.request_session}
         if self.buvid:
             headers['Buvid'] = self.buvid
         if kind == 'CLICK':
@@ -331,7 +337,7 @@ class TVClient:
             # response. Limit this compatibility branch to the observed 14013.
             identity_update = (status == 200 and kind == 'CLICK'
                                and path == '/x/report/click/android/tv'
-                               and result.get('code') == 14013
+                               and result.get('code') in (0, 14013)
                                and isinstance(replacement_did, str) and bool(replacement_did.strip()))
             if identity_update:
                 event['identity_update'] = True
@@ -348,43 +354,39 @@ class TVClient:
 
 def extra_string(session):
     # PlayerReportUtil uses single-quoted pairs, not JSON.
-    values = {'session_id': '', 'resource_id': '', 'internal_trackid': '', 'section_id': '',
-              'guest_id': '', 'resource_from': '1', 'is_preview': '0', 'watch_right': '',
+    values = {'session_id': session, 'resource_id': '', 'internal_track_id': '', 'section_id': '',
+              'guest_id': '', 'resource_from': '', 'is_preview': '0', 'watch_right': '',
               'section_type': '', 'ott_track_id': '', 'session_more': '', 'teenager_mode': '0'}
     return '{' + ','.join(f"'{k}':'{v}'" for k, v in values.items()) + '}'
 
 
 def report_click(client, params, run_state, run_dir, item):
-    """Accept only code=0; correct did once after the observed 14013 response."""
+    """Store server identity for future sessions; never replay a click report."""
     payload = dict(params)
     item.update(play_click_accepted=False, click_retry_count=0, click_attempts=[])
-    for attempt in range(2):
-        response = client.request('/x/report/click/android/tv', payload, 'CLICK')
-        code = response.get('code', 0)
-        item['click_api_code'] = code
-        item['click_attempts'].append({'code': code, 'did_present': bool(payload.get('did')),
-                                       'did_sha256': hashlib.sha256(payload.get('did', '').encode()).hexdigest()})
-        replacement = (response.get('data') or {}).get('rpdid')
-        if isinstance(replacement, str) and replacement.strip():
-            validate_did(replacement)
-            item['returned_rpdid'] = replacement
-            run_state['did'] = replacement
-            save(run_dir / 'state.json', run_state)
-        if code == 0:
-            item['play_click_accepted'] = True
-            return response
-        if code != 14013 or not isinstance(replacement, str) or not replacement.strip() or attempt == 1:
-            raise RuntimeError(f'Playback click was not accepted: code={code}; no further retries')
-        # Keep the original session, content IDs and playback timestamps. Only
-        # the server-supplied report identity changes; the first event failed.
-        item.update(did_refreshed=True, click_retry_count=1)
-        payload['did'] = replacement
-    raise AssertionError('unreachable')
+    response = client.request('/x/report/click/android/tv', payload, 'CLICK')
+    code = response.get('code')
+    item['click_api_code'] = code
+    item['click_attempts'].append({'code': code, 'did_present': bool(payload.get('did')),
+                                   'did_sha256': hashlib.sha256(payload.get('did', '').encode()).hexdigest()})
+    replacement = (response.get('data') or {}).get('rpdid')
+    if isinstance(replacement, str) and replacement.strip():
+        validate_did(replacement)
+        item['returned_rpdid'] = replacement
+        run_state['did'] = replacement
+        if run_state.get('client_state_namespace'):
+            ClientState(ROOT / '.private' / 'client-state', run_state['client_state_namespace']).update_did(replacement)
+        save(run_dir / 'state.json', run_state)
+    if code == 0:
+        item['play_click_accepted'] = True
+        return response
+    raise PlaybackFailure(f'Playback click was not accepted: code={code}; identity saved for next session; no replay')
 
 
 def play_one(client, video, run_state, run_dir, target_seconds):
     bvid = video['bvid']
-    item = {'bvid': bvid, 'started_at': now(), 'status': 'attempted', 'session': uuid.uuid4().hex}
+    item = {'bvid': bvid, 'started_at': now(), 'status': 'attempted',
+            'session': hashlib.sha1(uuid.uuid4().bytes).hexdigest()}
     label = f'{run_state["window_id"]} {bvid}' if 'window_id' in run_state else bvid
     if 'window_id' in run_state:
         item['window_id'] = run_state['window_id']
@@ -400,30 +402,21 @@ def play_one(client, video, run_state, run_dir, target_seconds):
         aid, cid = view['aid'], view['cid']
         item.update(aid=aid, cid=cid, before_view=view['stat']['view'])
         result = client.request('/x/tv/playurl', {'object_id': aid, 'cid': cid, 'playurl_type': 1,
-                                'qn': 16, 'fnver': 0, 'fnval': 0, 'device_name': 'android',
-                                'source_type': 1, 'force_host': 2})['data']
-        if result.get('is_drm') or result.get('is_preview'):
-            raise RuntimeError('Response is DRM-protected or a preview')
-        media = result.get('durl') or []
-        if len(media) != 1 or not media[0].get('url'):
-            raise RuntimeError('Expected one progressive MP4 stream')
-        url = media[0]['url']
+                                'qn': 80, 'fnver': 0, 'fnval': 131088, 'device_name': 'android',
+                                'source_type': 1, 'force_host': 0, 'fourk': 1})['data']
+        media = select_media(result)
+        url = media['urls'][0]
         duration = float(result['timelength']) / 1000
         target = min(target_seconds, duration)
         if RUN_BUDGET:
             RUN_BUDGET.begin_playback(target)
-        item.update(duration=duration, target_seconds=target, quality=result['quality'],
+        item.update(duration=duration, target_seconds=target, quality=result['quality'], media_kind=media['kind'],
                     media_host=urllib.parse.urlsplit(url).hostname,
                     media_url_sha256=hashlib.sha256(url.encode()).hexdigest())
         playback_progress(stage='connecting', decoded_seconds=0, frames=0, target_seconds=target)
         output = private / f'{bvid}.ffmpeg.log'
         progress_file = run_dir / f'{bvid}.progress.jsonl'
-        command = [ffmpeg_executable(), '-hide_banner', '-nostdin', '-loglevel', 'info', '-re',
-                   '-rw_timeout', '3000000' if RUN_BUDGET else '8000000', '-user_agent', UA,
-                   '-threads', '2', '-filter_threads', '1', '-filter_complex_threads', '1',
-                   *(['-http_proxy', HTTP_PROXY] if HTTP_PROXY else []), '-i', url,
-                   '-t', str(target), '-threads', '1', '-map', '0:v:0', '-map', '0:a:0',
-                   '-progress', 'pipe:1', '-stats_period', '1', '-nostats', '-f', 'null', '-']
+        command = decoder_command(ffmpeg_executable(), media, target, UA, HTTP_PROXY, bool(RUN_BUDGET))
         first_frame = False
         decoded = frames = 0
         start_clock = time.monotonic()
@@ -431,17 +424,22 @@ def play_one(client, video, run_state, run_dir, target_seconds):
         item.update(heartbeat_interval=HEARTBEAT_INTERVAL, periodic_heartbeats=[])
         start_ts = int(time.time())
         events = []
-        extra = extra_string(item['session'])
+        request_session = getattr(client, 'request_session', '')
+        extra = extra_string(request_session if isinstance(request_session, str) else '')
         identity = {'aid': str(aid), 'cid': str(cid), 'mid': '0', 'sid': '0', 'epid': '0',
                     'type': '3', 'sub_type': '0', 'play_mode': '1', 'session': item['session'],
                     'playlist_type': '', 'playlist_id': '', 'device': 'master', 'auto_play': '0'}
 
         def heartbeat(played, elapsed):
-            return {**identity, 'start_ts': start_ts, 'quality': result['quality'],
-                    'total_time': elapsed, 'paused_time': max(0, elapsed - played),
-                    'played_time': played, 'duration': math.floor(duration), 'play_type': '1',
-                    'network_type': '1', 'last_play_progress_time': played,
-                    'max_play_progress_time': played, 'extra': extra}
+            # This decoder never pauses/seeks. Startup/buffering is not pause
+            # time; played is a conservative decoded-time estimate, position
+            # comes from media timestamps. This is not the TV lifecycle model.
+            return {**{k: v for k, v in identity.items() if k != 'sid'},
+                    'start_ts': start_ts, 'quality': result['quality'],
+                    'total_time': elapsed, 'paused_time': 0,
+                    'played_time': played, 'video_duration': math.floor(duration), 'play_type': '1',
+                    'network_type': '1', 'last_play_progress_time': math.floor(min(decoded, duration)) if played else 0,
+                    'max_play_progress_time': math.floor(min(decoded, duration)) if played else 0, 'extra': extra}
 
         def send_heartbeat(phase, played, elapsed):
             client.heartbeat_phase = phase
@@ -496,10 +494,18 @@ def play_one(client, video, run_state, run_dir, target_seconds):
                         item['failure_stage'] = 'start_heartbeat'
                         send_heartbeat('start', 0, 0)
                         events.append('start_heartbeat')
+                        item['failure_stage'] = 'server_clock'
+                        server_time = client.request('/x/click-interface/click/now', {})['data']['now']
+                        if type(server_time) is not int or server_time <= 0:
+                            raise PlaybackFailure('Server clock response is invalid')
+                        if run_state.get('client_state_namespace'):
+                            run_state['ftime'] = ClientState(ROOT / '.private' / 'client-state', run_state['client_state_namespace']).first_time(server_time)
+                        elif run_state.get('ftime') is None:
+                            run_state['ftime'] = server_time
                         click = {**identity, 'appkey': client.appkey,
                                  **{k: DEVICE_PROFILE['common'][k] for k in ('platform', 'mobi_app', 'build')},
-                                 'part': '0', 'lv': '0',
-                                 'ftime': str(run_state['ftime']), 'stime': str(start_ts),
+                                 'part': str(next((p['page'] for p in view.get('pages', []) if p.get('cid') == cid), -1)), 'lv': '0',
+                                 'ftime': str(run_state['ftime']), 'stime': str(server_time),
                                  'ogv_copyright_index': '',
                                  'extra': urllib.parse.quote_plus(extra, safe='*').replace('~', '%7E')}
                         if run_state.get('did'):
@@ -509,7 +515,7 @@ def play_one(client, video, run_state, run_dir, target_seconds):
                         report_click(client, click, run_state, run_dir, item)
                         events.append('play_click')
                         item.pop('failure_stage', None)
-                        print(f'{label}: first decoded frame; start reports accepted (did corrections={item["click_retry_count"]})', flush=True)
+                        print(f'{label}: first decoded frame; start reports accepted; no click replay', flush=True)
                     clock_now = time.monotonic()
                     played = cadence.take(decoded, clock_now - start_clock, clock_now, target,
                                           ended=block.get('progress') == 'end' or proc.poll() is not None)
@@ -618,17 +624,17 @@ def play_window(video_id, window_id, buvid, run_dir, seconds=60, *, did=None, st
         validate_did(did)
         # Atomic reservation prevents concurrent launches into the same output folder.
         run_dir.mkdir(parents=True, exist_ok=False)
-        did_source = 'explicit' if did is not None else 'generated'
-        if buvid is None or did is None:
-            identity = generate_local_identity()
-            if buvid is None:
-                buvid = identity['buvid']
-            if did is None:
-                did = identity['did']
+        namespace = f'{CLIENT_STATE_MODE}:{DEVICE_PROFILE["id"]}:{CLIENT_STATE_SLOT}:{buvid or "default"}'
+        identity = ClientState(ROOT / '.private' / 'client-state', namespace).load(buvid)
+        did_source = 'explicit' if did is not None else ('server-persisted' if identity['did'] else 'absent')
+        buvid = identity['buvid']
+        if did is None:
+            did = identity['did']
         private = ROOT / '.private' / 'windows' / hashlib.sha256(str(run_dir).encode()).hexdigest()[:24]
         client = TVClient(private, run_dir / 'events.jsonl', buvid=buvid)
         state = {'window_id': window_id, 'video_id': video_id, 'created_at': now(),
-                 'buvid': client.buvid, 'ftime': int(time.time()), 'seconds': seconds,
+                 'buvid': client.buvid, 'ftime': identity['ftime'], 'seconds': seconds,
+                 'client_state_namespace': namespace,
                  'initial_did': did, 'did': did or '', 'device_profile': DEVICE_PROFILE,
                  'initial_did_source': did_source,
                  'private_dir': str(private), 'attempts': {}, 'status': 'preparing'}
@@ -689,8 +695,8 @@ def main():
                         help='Video ID for one playback, or run/observe/report/play')
     parser.add_argument('--run-dir', type=Path)
     parser.add_argument('--video-id', help='BVID, av ID or numeric AID for one playback window')
-    parser.add_argument('--buvid', help='Buvid for this instance; omitted means a new MAC-based Buvid')
-    parser.add_argument('--did', help='Initial report did; omitted means a new local DID for play')
+    parser.add_argument('--buvid', help='Explicit client identity; omitted reuses persisted test-client Buvid')
+    parser.add_argument('--did', help='Explicit report did; otherwise reuse server rpdid or omit on first session')
     parser.add_argument('--limit', type=int, default=10, help='Maximum new attempts this invocation')
     parser.add_argument('--heartbeat-interval', type=int, choices=(0, 15), default=0,
                         help='Experimental real-playback heartbeat: 0=off, 15=seconds')
@@ -765,7 +771,11 @@ def main():
             state['initial_did'] = state['did']
             state['initial_did_source'] = 'explicit'
             save(state_path, state)
-        client = TVClient(ROOT / '.private' / directory.name, directory / 'events.jsonl')
+        namespace = f'{CLIENT_STATE_MODE}:{DEVICE_PROFILE["id"]}:{CLIENT_STATE_SLOT}:legacy-run'
+        stored = ClientState(ROOT / '.private' / 'client-state', namespace).load()
+        state.update(client_state_namespace=namespace, buvid=stored['buvid'], ftime=stored['ftime'])
+        state['did'] = args.did if args.did is not None else stored['did']
+        client = TVClient(ROOT / '.private' / directory.name, directory / 'events.jsonl', buvid=stored['buvid'])
         count = 0
         for video in state['videos']:
             if video['bvid'] in state['attempts']:

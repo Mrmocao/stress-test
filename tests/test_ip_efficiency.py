@@ -40,7 +40,7 @@ class NetworkEfficiencyTests(unittest.TestCase):
         direct=urllib.request.build_opener(urllib.request.ProxyHandler({}))
         observer=Mock()
         try:
-            with patch.object(tv,'API_ROOT',f'http://127.0.0.1:{server.server_port}'), patch.object(tv,'HTTP_OPENER',direct), patch.object(tv,'RUN_BUDGET',ExecutionBudget(time.monotonic()+90,45)), patch.object(tv,'NETWORK_OBSERVER',observer):
+            with patch.object(tv,'WEB_API_ROOT',f'http://127.0.0.1:{server.server_port}'), patch.object(tv,'HTTP_OPENER',direct), patch.object(tv,'RUN_BUDGET',ExecutionBudget(time.monotonic()+90,45)), patch.object(tv,'NETWORK_OBSERVER',observer):
                 self.assertEqual(len(tv.public_json('/x/web-interface/view')['padding']),388000)
             self.assertEqual(observer.call_count,1)
             self.assertGreater(observer.call_args.args[1],3000)

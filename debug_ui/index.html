@@ -4,13 +4,13 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="inspector-token" content="__INSPECTOR_TOKEN__">
   <link rel="icon" href="data:,">
-  <title>TV Playback · 运行观察台</title>
+  <title>TV Playback · dev · 运行观察台</title>
   <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
 </head>
 <body class="compact">
 <header><a class="brand" href="/">TV<span> / </span>Playback</a><span class="connection" id="connection">连接中</span></header>
 <main>
-  <div class="heading"><div><h1>运行观察台</h1><p>按轮查看公网 IP、接口调用和执行结果。</p></div><span class="runtime">PYTHON · LOCAL INSPECTOR</span></div>
+  <div class="heading"><div><h1>运行观察台 · dev</h1><p>TV 实测参数修正版 · 支持 DASH；默认仅开始、结束上报。</p></div><span class="runtime">DEV · LOCAL INSPECTOR</span></div>
   <form id="launch">
     <label>运行模式<select id="mode"><option value="demo">离线演示 · 本地音视频</option><option value="live">真实播放 · 哔哩哔哩接口</option></select></label>
     <label class="video-field">视频 BV / av 号或链接<input id="video" value="BV1Gq486CEK4" placeholder="BV1Gq486CEK4" autocomplete="off"></label>
@@ -19,7 +19,7 @@
     <label class="concurrency-field">并发数<input id="concurrency" type="number" min="1" max="100" step="1" value="1" required></label>
     <label class="repeat-field">每路重复次数<input id="repeat" type="number" min="1" max="1000" step="1" value="1" required></label>
     <label class="check debug-only"><input id="start-paused" type="checkbox">启动时暂停</label>
-    <label class="check"><input id="periodic-heartbeat" type="checkbox" checked>每 15 秒播放心跳（试验）</label>
+    <label class="check"><input id="periodic-heartbeat" type="checkbox">每 15 秒播放心跳（试验）</label>
     <button id="start" class="primary" type="submit">启动观察 <span>↗</span></button>
   </form>
   <section class="device-panel" aria-label="设备配置方案">

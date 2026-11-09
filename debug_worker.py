@@ -28,7 +28,7 @@ RUN_GATE.set()
 STEP = False
 EVENTS = 0
 LIMIT = 200000
-PRIVATE_NAMES = {'APP_SECRET', 'AES_KEY', 'AES_IV', 'CLICK_SALT'}
+PRIVATE_NAMES = {'APP_SECRET', 'AES_KEY', 'AES_IV', 'CLICK_SALT', 'guest_access_key', 'access_key', 'rpdid'}
 
 
 def emit(kind, **data):
@@ -167,12 +167,20 @@ def install_demo(tv, run_dir, seconds):
         shutil.copyfile(fixture, media)
     else:
         subprocess.run(command, check=True, capture_output=True, timeout=120)
+    video_media, audio_media = run_dir / 'demo-video.mp4', run_dir / 'demo-audio.m4a'
+    use_dash = os.environ.get('TV_DEMO_FORMAT', 'dash') == 'dash'
+    if use_dash:
+        subprocess.run([ffmpeg_executable(), '-hide_banner', '-loglevel', 'error', '-y',
+                        '-i', str(media), '-map', '0:v:0', '-c', 'copy', '-movflags', '+faststart', str(video_media),
+                        '-map', '0:a:0', '-c', 'copy', '-movflags', '+faststart', str(audio_media)],
+                       check=True, capture_output=True, timeout=30)
     class MediaHandler(BaseHTTPRequestHandler):
         def do_GET(self):
-            if self.path != '/demo.mp4':
+            selected = {'/demo.mp4': media, '/video.mp4': video_media, '/audio.m4a': audio_media}.get(self.path)
+            if selected is None or not selected.exists():
                 self.send_error(404)
                 return
-            body = media.read_bytes()
+            body = selected.read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', 'video/mp4')
             self.send_header('Content-Length', str(len(body)))
@@ -203,11 +211,17 @@ def install_demo(tv, run_dir, seconds):
         elif path == '/x/tv/playurl':
             data = {'code': 0, 'data': {'is_drm': False, 'is_preview': False,
                     'durl': [{'url': media_url}], 'timelength': duration * 1000, 'quality': 16}}
+            if use_dash:
+                data['data'].update(durl=[], dash={
+                    'video': [{'id': 16, 'codecid': 7, 'base_url': media_url.replace('/demo.mp4', '/video.mp4')}],
+                    'audio': [{'id': 30216, 'base_url': media_url.replace('/demo.mp4', '/audio.m4a')}]})
         elif path == '/x/report/click/android/tv':
             clicks += 1
-            # Exercise the existing one-time 14013 DID replacement branch.
-            data = {'code': 14013 if clicks == 1 else 0, 'message': 'offline fixture',
+            # Observed first-install behavior: accept and return identity for next session.
+            data = {'code': 0, 'message': 'offline fixture',
                     'data': {'rpdid': 'offline_server_did'}}
+        elif path == '/x/click-interface/click/now':
+            data = {'code': 0, 'data': {'now': int(time.time())}}
         elif path == '/x/report/heartbeat/mobile':
             data = {'code': 0, 'message': 'offline fixture', 'data': {}}
         else:
@@ -235,6 +249,7 @@ def main():
     parser.add_argument('--trace', action='store_true')
     parser.add_argument('--device-profile', default=BASELINE)
     parser.add_argument('--device-confirmed', action='store_true')
+    parser.add_argument('--client-slot', default='default')
     args = parser.parse_args()
     try:
         profile = resolve_profile(args.mode, args.device_profile, args.device_confirmed)
@@ -253,6 +268,8 @@ def main():
     tv.DEVICE_PROFILE = profile
     tv.UA = profile['user_agent']
     tv.RUN_BUDGET = None
+    tv.CLIENT_STATE_MODE = args.mode
+    tv.CLIENT_STATE_SLOT = args.client_slot
     tv.NETWORK_OBSERVER = lambda event, elapsed_ms: emit('network', mode=args.mode, elapsed_ms=elapsed_ms, **event)
     tv.PROGRESS_OBSERVER = lambda progress: emit('progress', **progress)
     (args.run_dir / 'device-profile.json').write_text(
