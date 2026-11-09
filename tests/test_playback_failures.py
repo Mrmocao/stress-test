@@ -60,6 +60,9 @@ class PlaybackFailureTests(unittest.TestCase):
             ('HTTP error 403 Forbidden', 'HTTP 403'),
             ('Connection timed out', '超时'),
             ('Stream ends prematurely', '连接中断'),
+            ('Error reading HTTP response: Error number -138 occurred', 'HTTP 响应读取失败'),
+            ('Error opening input: I/O error', '媒体输入读写失败'),
+            ('Error opening input: Invalid data found when processing input', '媒体响应无法解析'),
             ('Unknown decoder error', '播放要求'),
         ):
             with self.subTest(log=log):

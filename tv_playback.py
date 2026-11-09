@@ -98,7 +98,7 @@ def request_failure(event, error):
         else:
             retryable = False
             event['error_message'] += '；剩余寿命不足，取消重试'
-    return RequestFailure(f'{event["method"]} {event["path"]}：{detail}（第 {event["attempt"]}/{event["max_attempts"]} 次）',
+    return RequestFailure(f'{event["method"]} {event["path"]}：{event["error_message"]}（第 {event["attempt"]}/{event["max_attempts"]} 次）',
                           retryable=retryable)
 
 
@@ -122,6 +122,12 @@ def decoder_failure(log, code):
         return f'视频流请求失败：HTTP {status}（代理或视频源返回，业务接口成功不代表视频流可用）', status
     if 'timed out' in log.lower():
         return '视频流读取超时', None
+    if 'Error reading HTTP response' in log:
+        return '媒体 HTTP 响应读取失败（代理或视频源连接异常；未取得完整响应，不能判定为设备参数错误）', None
+    if 'Invalid data found when processing input' in log:
+        return '媒体响应无法解析（可能为损坏、截断或非媒体内容；需检查私有解码日志）', None
+    if 'Error opening input: I/O error' in log:
+        return '媒体输入读写失败（I/O error；尚未取得可解码数据）', None
     if any(text in log for text in ('Stream ends prematurely', 'End of file', 'IO error:')):
         return '视频流连接中断或数据不完整', None
     return f'音视频解码未达到播放要求（FFmpeg 退出码 {code}）', None

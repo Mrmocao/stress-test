@@ -118,6 +118,18 @@ class ReadRetryTests(unittest.TestCase):
                 self.assertEqual(len(self.hits), 1)
                 self.wait.assert_not_called()
 
+    def test_lease_exhaustion_reason_reaches_public_failure(self):
+        from unittest.mock import Mock
+        event = {'method': 'GET', 'path': '/x/web-interface/view',
+                 'phase': 'response_body', 'attempt': 1, 'max_attempts': 2}
+        budget = Mock()
+        budget.can_retry.return_value = False
+        with patch.object(tv, 'RUN_BUDGET', budget):
+            error = tv.request_failure(event, TimeoutError())
+        self.assertFalse(error.retryable)
+        self.assertIn('剩余寿命不足，取消重试', str(error))
+        self.assertIn(event['error_message'], str(error))
+
 
 if __name__ == '__main__':
     unittest.main()
