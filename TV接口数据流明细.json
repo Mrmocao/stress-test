@@ -1,0 +1,1283 @@
+{
+  "evidence_run": "E:\\个人资料存档\\哔哩哔哩\\bilibili-tv-playback\\bilibili-tv-playback\\.debug-runs\\20261107-102123-717ffc",
+  "video": "BV1Gq486CEK4",
+  "analysis_scope": "This Python script and the recorded run, not the complete TV app or server internals",
+  "resources": [
+    {
+      "response_field": "data.durl[0].url",
+      "loaded_by_script": true,
+      "url_without_query": "https://cn-gddg-ct-01-10.bilivideo.com/upgcxcode/90/91/43360849190/43360849190-1-192.mp4",
+      "query_parameter_names": [
+        "e",
+        "oi",
+        "mid",
+        "og",
+        "nbs",
+        "uipk",
+        "platform",
+        "trid",
+        "gen",
+        "os",
+        "deadline",
+        "upsig",
+        "uparams",
+        "cdnid",
+        "bvc",
+        "nettype",
+        "bw",
+        "lrs",
+        "V",
+        "qn_dyeid",
+        "agrr",
+        "buvid",
+        "build",
+        "dl",
+        "f",
+        "orderid"
+      ]
+    },
+    {
+      "response_field": "data.wild_vision.banner.pre_icon",
+      "loaded_by_script": false,
+      "url_without_query": "https://i0.hdslb.com/bfs/tvcover/db682f4a39cae395cc58b3c8db66a3027f6c7d5a.png",
+      "query_parameter_names": []
+    },
+    {
+      "response_field": "data.wild_vision.banner.post_icon",
+      "loaded_by_script": false,
+      "url_without_query": "https://i0.hdslb.com/bfs/activity-plat/static/20221017/704b55e9b972baf7a38c1412859ea03a/CAP3i7MTj0.png",
+      "query_parameter_names": []
+    },
+    {
+      "response_field": "data.wild_vision.switch_motion",
+      "loaded_by_script": false,
+      "url_without_query": "https://i0.hdslb.com/bfs/tvcover/47a4626ee2e783042760a96604ea5196c7b956ee.svga",
+      "query_parameter_names": []
+    },
+    {
+      "response_field": "data.wild_vision.switch_toast_frame",
+      "loaded_by_script": false,
+      "url_without_query": "https://i0.hdslb.com/bfs/tvcover/830d4d01bc78332de3db70806720f71c1998b089.png",
+      "query_parameter_names": []
+    }
+  ],
+  "playurl_response_sanitized": {
+    "code": 0,
+    "message": "0",
+    "ttl": 1,
+    "data": {
+      "result": "suee",
+      "from": "local",
+      "quality": 64,
+      "format": "mp4720",
+      "timelength": 2694536,
+      "accept_format": "mp4720",
+      "accept_description": [
+        "高清 720P"
+      ],
+      "accept_quality": [
+        64
+      ],
+      "accept_watermark": [
+        false
+      ],
+      "video_codecid": 7,
+      "video_project": true,
+      "seek_param": "start",
+      "seek_type": "second",
+      "durl": [
+        {
+          "order": 1,
+          "length": 2694536,
+          "size": 412125670,
+          "ahead": "",
+          "vhead": "",
+          "url": {
+            "url_without_query": "https://cn-gddg-ct-01-10.bilivideo.com/upgcxcode/90/91/43360849190/43360849190-1-192.mp4",
+            "query_parameter_names": [
+              "e",
+              "oi",
+              "mid",
+              "og",
+              "nbs",
+              "uipk",
+              "platform",
+              "trid",
+              "gen",
+              "os",
+              "deadline",
+              "upsig",
+              "uparams",
+              "cdnid",
+              "bvc",
+              "nettype",
+              "bw",
+              "lrs",
+              "V",
+              "qn_dyeid",
+              "agrr",
+              "buvid",
+              "build",
+              "dl",
+              "f",
+              "orderid"
+            ]
+          },
+          "backup_url": null,
+          "md5": ""
+        }
+      ],
+      "dash": null,
+      "qn_extras": [
+        {
+          "qn": 64,
+          "need_vip": false,
+          "need_login": false,
+          "icon": "",
+          "icon2": "",
+          "attribute": 0,
+          "is_preview": false,
+          "preview_time": 0
+        }
+      ],
+      "type": 3,
+      "support_formats": [
+        {
+          "quality": 64,
+          "format": "mp4720",
+          "description": "高清 720P",
+          "new_description": "720P 准高清",
+          "display_desc": "720P",
+          "superscript": "",
+          "attribute": 0,
+          "can_watch_qn_reason": 0,
+          "limit_watch_reason": 0,
+          "report_params": ""
+        }
+      ],
+      "has_dolby": false,
+      "is_login": false,
+      "is_vip": false,
+      "degrade_type": 0,
+      "bp": 0,
+      "is_preview": 0,
+      "fnval": 0,
+      "fnver": 0,
+      "no_rexcode": 0,
+      "has_paid": false,
+      "status": 0,
+      "vip_type": 0,
+      "vip_status": 0,
+      "proj_vip_type": 0,
+      "clip": null,
+      "play_tag": null,
+      "is_drm": false,
+      "drm_tech_type": 0,
+      "debug_info": null,
+      "volume": {
+        "measured_i": -23.9,
+        "measured_lra": 5.6,
+        "measured_tp": 0.001,
+        "measured_threshold": -34.3,
+        "target_offset": 0.1,
+        "target_i": -14,
+        "target_tp": -1,
+        "multi_scene_args": {
+          "high_dynamic_target_i": "-24",
+          "normal_target_i": "-14",
+          "undersized_target_i": "-28"
+        }
+      },
+      "auto_quality_max": 0,
+      "live_cdn_159_switch": 0,
+      "aid": 0,
+      "cid": 0,
+      "multi_device": null,
+      "external": null,
+      "video_cache": "",
+      "final_access": null,
+      "wild_vision": {
+        "banner": {
+          "pre_icon": {
+            "url_without_query": "https://i0.hdslb.com/bfs/tvcover/db682f4a39cae395cc58b3c8db66a3027f6c7d5a.png",
+            "query_parameter_names": []
+          },
+          "post_icon": {
+            "url_without_query": "https://i0.hdslb.com/bfs/activity-plat/static/20221017/704b55e9b972baf7a38c1412859ea03a/CAP3i7MTj0.png",
+            "query_parameter_names": []
+          }
+        },
+        "qn_list": [],
+        "switch_motion_freq": -1,
+        "switch_motion": {
+          "url_without_query": "https://i0.hdslb.com/bfs/tvcover/47a4626ee2e783042760a96604ea5196c7b956ee.svga",
+          "query_parameter_names": []
+        },
+        "switch_motion_md5": "426cd349f6bcc6afcccf2402cdd2765c",
+        "switch_toast_frame": {
+          "url_without_query": "https://i0.hdslb.com/bfs/tvcover/830d4d01bc78332de3db70806720f71c1998b089.png",
+          "query_parameter_names": []
+        }
+      },
+      "telecom_ext": {
+        "telecom_vip": false,
+        "telecom_vip_device_allow": false,
+        "telecom_vip_qn_toast": "",
+        "need_report": false,
+        "watch_network_change": false
+      },
+      "enable_p2p_upload": false
+    }
+  },
+  "response_leaf_field_usage": [
+    {
+      "field": "code",
+      "use": "api_success_check_and_event_log",
+      "value": 0
+    },
+    {
+      "field": "message",
+      "use": "api_success_check_and_event_log",
+      "value": "0"
+    },
+    {
+      "field": "ttl",
+      "use": "received_only_not_used_by_script",
+      "value": 1
+    },
+    {
+      "field": "data.result",
+      "use": "received_only_not_used_by_script",
+      "value": "suee"
+    },
+    {
+      "field": "data.from",
+      "use": "received_only_not_used_by_script",
+      "value": "local"
+    },
+    {
+      "field": "data.quality",
+      "use": "local_state_and_heartbeat_quality",
+      "value": 64
+    },
+    {
+      "field": "data.format",
+      "use": "received_only_not_used_by_script",
+      "value": "mp4720"
+    },
+    {
+      "field": "data.timelength",
+      "use": "duration_and_target_calculation_then_heartbeat_duration",
+      "value": 2694536
+    },
+    {
+      "field": "data.accept_format",
+      "use": "received_only_not_used_by_script",
+      "value": "mp4720"
+    },
+    {
+      "field": "data.accept_description[0]",
+      "use": "received_only_not_used_by_script",
+      "value": "高清 720P"
+    },
+    {
+      "field": "data.accept_quality[0]",
+      "use": "received_only_not_used_by_script",
+      "value": 64
+    },
+    {
+      "field": "data.accept_watermark[0]",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.video_codecid",
+      "use": "received_only_not_used_by_script",
+      "value": 7
+    },
+    {
+      "field": "data.video_project",
+      "use": "received_only_not_used_by_script",
+      "value": true
+    },
+    {
+      "field": "data.seek_param",
+      "use": "received_only_not_used_by_script",
+      "value": "start"
+    },
+    {
+      "field": "data.seek_type",
+      "use": "received_only_not_used_by_script",
+      "value": "second"
+    },
+    {
+      "field": "data.durl[0].order",
+      "use": "received_only_not_used_by_script",
+      "value": 1
+    },
+    {
+      "field": "data.durl[0].length",
+      "use": "received_only_not_used_by_script",
+      "value": 2694536
+    },
+    {
+      "field": "data.durl[0].size",
+      "use": "received_only_not_used_by_script",
+      "value": 412125670
+    },
+    {
+      "field": "data.durl[0].ahead",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.durl[0].vhead",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.durl[0].url",
+      "use": "passed_to_ffmpeg_for_media_loading",
+      "value": {
+        "url_without_query": "https://cn-gddg-ct-01-10.bilivideo.com/upgcxcode/90/91/43360849190/43360849190-1-192.mp4",
+        "query_parameter_names": [
+          "e",
+          "oi",
+          "mid",
+          "og",
+          "nbs",
+          "uipk",
+          "platform",
+          "trid",
+          "gen",
+          "os",
+          "deadline",
+          "upsig",
+          "uparams",
+          "cdnid",
+          "bvc",
+          "nettype",
+          "bw",
+          "lrs",
+          "V",
+          "qn_dyeid",
+          "agrr",
+          "buvid",
+          "build",
+          "dl",
+          "f",
+          "orderid"
+        ]
+      }
+    },
+    {
+      "field": "data.durl[0].backup_url",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.durl[0].md5",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.dash",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.qn_extras[0].qn",
+      "use": "received_only_not_used_by_script",
+      "value": 64
+    },
+    {
+      "field": "data.qn_extras[0].need_vip",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.qn_extras[0].need_login",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.qn_extras[0].icon",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.qn_extras[0].icon2",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.qn_extras[0].attribute",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.qn_extras[0].is_preview",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.qn_extras[0].preview_time",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.type",
+      "use": "received_only_not_used_by_script",
+      "value": 3
+    },
+    {
+      "field": "data.support_formats[0].quality",
+      "use": "received_only_not_used_by_script",
+      "value": 64
+    },
+    {
+      "field": "data.support_formats[0].format",
+      "use": "received_only_not_used_by_script",
+      "value": "mp4720"
+    },
+    {
+      "field": "data.support_formats[0].description",
+      "use": "received_only_not_used_by_script",
+      "value": "高清 720P"
+    },
+    {
+      "field": "data.support_formats[0].new_description",
+      "use": "received_only_not_used_by_script",
+      "value": "720P 准高清"
+    },
+    {
+      "field": "data.support_formats[0].display_desc",
+      "use": "received_only_not_used_by_script",
+      "value": "720P"
+    },
+    {
+      "field": "data.support_formats[0].superscript",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.support_formats[0].attribute",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.support_formats[0].can_watch_qn_reason",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.support_formats[0].limit_watch_reason",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.support_formats[0].report_params",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.has_dolby",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.is_login",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.is_vip",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.degrade_type",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.bp",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.is_preview",
+      "use": "playback_validation",
+      "value": 0
+    },
+    {
+      "field": "data.fnval",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.fnver",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.no_rexcode",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.has_paid",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.status",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.vip_type",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.vip_status",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.proj_vip_type",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.clip",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.play_tag",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.is_drm",
+      "use": "playback_validation",
+      "value": false
+    },
+    {
+      "field": "data.drm_tech_type",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.debug_info",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.volume.measured_i",
+      "use": "received_only_not_used_by_script",
+      "value": -23.9
+    },
+    {
+      "field": "data.volume.measured_lra",
+      "use": "received_only_not_used_by_script",
+      "value": 5.6
+    },
+    {
+      "field": "data.volume.measured_tp",
+      "use": "received_only_not_used_by_script",
+      "value": 0.001
+    },
+    {
+      "field": "data.volume.measured_threshold",
+      "use": "received_only_not_used_by_script",
+      "value": -34.3
+    },
+    {
+      "field": "data.volume.target_offset",
+      "use": "received_only_not_used_by_script",
+      "value": 0.1
+    },
+    {
+      "field": "data.volume.target_i",
+      "use": "received_only_not_used_by_script",
+      "value": -14
+    },
+    {
+      "field": "data.volume.target_tp",
+      "use": "received_only_not_used_by_script",
+      "value": -1
+    },
+    {
+      "field": "data.volume.multi_scene_args.high_dynamic_target_i",
+      "use": "received_only_not_used_by_script",
+      "value": "-24"
+    },
+    {
+      "field": "data.volume.multi_scene_args.normal_target_i",
+      "use": "received_only_not_used_by_script",
+      "value": "-14"
+    },
+    {
+      "field": "data.volume.multi_scene_args.undersized_target_i",
+      "use": "received_only_not_used_by_script",
+      "value": "-28"
+    },
+    {
+      "field": "data.auto_quality_max",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.live_cdn_159_switch",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.aid",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.cid",
+      "use": "received_only_not_used_by_script",
+      "value": 0
+    },
+    {
+      "field": "data.multi_device",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.external",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.video_cache",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.final_access",
+      "use": "received_only_not_used_by_script",
+      "value": null
+    },
+    {
+      "field": "data.wild_vision.banner.pre_icon",
+      "use": "received_only_not_used_by_script",
+      "value": {
+        "url_without_query": "https://i0.hdslb.com/bfs/tvcover/db682f4a39cae395cc58b3c8db66a3027f6c7d5a.png",
+        "query_parameter_names": []
+      }
+    },
+    {
+      "field": "data.wild_vision.banner.post_icon",
+      "use": "received_only_not_used_by_script",
+      "value": {
+        "url_without_query": "https://i0.hdslb.com/bfs/activity-plat/static/20221017/704b55e9b972baf7a38c1412859ea03a/CAP3i7MTj0.png",
+        "query_parameter_names": []
+      }
+    },
+    {
+      "field": "data.wild_vision.switch_motion_freq",
+      "use": "received_only_not_used_by_script",
+      "value": -1
+    },
+    {
+      "field": "data.wild_vision.switch_motion",
+      "use": "received_only_not_used_by_script",
+      "value": {
+        "url_without_query": "https://i0.hdslb.com/bfs/tvcover/47a4626ee2e783042760a96604ea5196c7b956ee.svga",
+        "query_parameter_names": []
+      }
+    },
+    {
+      "field": "data.wild_vision.switch_motion_md5",
+      "use": "received_only_not_used_by_script",
+      "value": "426cd349f6bcc6afcccf2402cdd2765c"
+    },
+    {
+      "field": "data.wild_vision.switch_toast_frame",
+      "use": "received_only_not_used_by_script",
+      "value": {
+        "url_without_query": "https://i0.hdslb.com/bfs/tvcover/830d4d01bc78332de3db70806720f71c1998b089.png",
+        "query_parameter_names": []
+      }
+    },
+    {
+      "field": "data.telecom_ext.telecom_vip",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.telecom_ext.telecom_vip_device_allow",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.telecom_ext.telecom_vip_qn_toast",
+      "use": "received_only_not_used_by_script",
+      "value": ""
+    },
+    {
+      "field": "data.telecom_ext.need_report",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.telecom_ext.watch_network_change",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    },
+    {
+      "field": "data.enable_p2p_upload",
+      "use": "received_only_not_used_by_script",
+      "value": false
+    }
+  ],
+  "recorded_requests": [
+    {
+      "index": 1,
+      "at": "2026-11-07T10:21:24+08:00",
+      "endpoint": "/x/tv/playurl",
+      "kind": "GET",
+      "headers": {
+        "User-Agent": "BiliDroid/1.8.9 (Linux; U; Android 9; zh_CN; MiTV-ASTP0 Build/P) mobi_app/android_tv_yst build/108900 channel/master",
+        "Buvid": "XY0C3400A8153C68CCB76C694103795A27F2C"
+      },
+      "business_parameters": {
+        "object_id": 117564847951309,
+        "cid": 43360849190,
+        "playurl_type": 1,
+        "qn": 16,
+        "fnver": 0,
+        "fnval": 0,
+        "device_name": "android",
+        "source_type": 1,
+        "force_host": 2
+      },
+      "transmitted_fields_before_transport_encoding": {
+        "appkey": "4409e2ce8ffd12b8",
+        "brand": "xiaomi",
+        "build": "108900",
+        "channel": "master",
+        "child_lock": "0",
+        "cid": "43360849190",
+        "device_name": "android",
+        "fnval": "0",
+        "fnver": "0",
+        "force_host": "2",
+        "mobi_app": "android_tv_yst",
+        "model": "MiTV-ASTP0",
+        "object_id": "117564847951309",
+        "platform": "android",
+        "playurl_type": "1",
+        "qn": "16",
+        "source_type": "1",
+        "sys_ver": "28",
+        "teenager_mode": "0",
+        "ts": "1794018084",
+        "sign": "<MD5 request signature present>"
+      },
+      "response": {
+        "code": 0,
+        "message": "0",
+        "ttl": 1,
+        "data": {
+          "result": "suee",
+          "from": "local",
+          "quality": 64,
+          "format": "mp4720",
+          "timelength": 2694536,
+          "accept_format": "mp4720",
+          "accept_description": [
+            "高清 720P"
+          ],
+          "accept_quality": [
+            64
+          ],
+          "accept_watermark": [
+            false
+          ],
+          "video_codecid": 7,
+          "video_project": true,
+          "seek_param": "start",
+          "seek_type": "second",
+          "durl": [
+            {
+              "order": 1,
+              "length": 2694536,
+              "size": 412125670,
+              "ahead": "",
+              "vhead": "",
+              "url": {
+                "url_without_query": "https://cn-gddg-ct-01-10.bilivideo.com/upgcxcode/90/91/43360849190/43360849190-1-192.mp4",
+                "query_parameter_names": [
+                  "e",
+                  "oi",
+                  "mid",
+                  "og",
+                  "nbs",
+                  "uipk",
+                  "platform",
+                  "trid",
+                  "gen",
+                  "os",
+                  "deadline",
+                  "upsig",
+                  "uparams",
+                  "cdnid",
+                  "bvc",
+                  "nettype",
+                  "bw",
+                  "lrs",
+                  "V",
+                  "qn_dyeid",
+                  "agrr",
+                  "buvid",
+                  "build",
+                  "dl",
+                  "f",
+                  "orderid"
+                ]
+              },
+              "backup_url": null,
+              "md5": ""
+            }
+          ],
+          "dash": null,
+          "qn_extras": [
+            {
+              "qn": 64,
+              "need_vip": false,
+              "need_login": false,
+              "icon": "",
+              "icon2": "",
+              "attribute": 0,
+              "is_preview": false,
+              "preview_time": 0
+            }
+          ],
+          "type": 3,
+          "support_formats": [
+            {
+              "quality": 64,
+              "format": "mp4720",
+              "description": "高清 720P",
+              "new_description": "720P 准高清",
+              "display_desc": "720P",
+              "superscript": "",
+              "attribute": 0,
+              "can_watch_qn_reason": 0,
+              "limit_watch_reason": 0,
+              "report_params": ""
+            }
+          ],
+          "has_dolby": false,
+          "is_login": false,
+          "is_vip": false,
+          "degrade_type": 0,
+          "bp": 0,
+          "is_preview": 0,
+          "fnval": 0,
+          "fnver": 0,
+          "no_rexcode": 0,
+          "has_paid": false,
+          "status": 0,
+          "vip_type": 0,
+          "vip_status": 0,
+          "proj_vip_type": 0,
+          "clip": null,
+          "play_tag": null,
+          "is_drm": false,
+          "drm_tech_type": 0,
+          "debug_info": null,
+          "volume": {
+            "measured_i": -23.9,
+            "measured_lra": 5.6,
+            "measured_tp": 0.001,
+            "measured_threshold": -34.3,
+            "target_offset": 0.1,
+            "target_i": -14,
+            "target_tp": -1,
+            "multi_scene_args": {
+              "high_dynamic_target_i": "-24",
+              "normal_target_i": "-14",
+              "undersized_target_i": "-28"
+            }
+          },
+          "auto_quality_max": 0,
+          "live_cdn_159_switch": 0,
+          "aid": 0,
+          "cid": 0,
+          "multi_device": null,
+          "external": null,
+          "video_cache": "",
+          "final_access": null,
+          "wild_vision": {
+            "banner": {
+              "pre_icon": {
+                "url_without_query": "https://i0.hdslb.com/bfs/tvcover/db682f4a39cae395cc58b3c8db66a3027f6c7d5a.png",
+                "query_parameter_names": []
+              },
+              "post_icon": {
+                "url_without_query": "https://i0.hdslb.com/bfs/activity-plat/static/20221017/704b55e9b972baf7a38c1412859ea03a/CAP3i7MTj0.png",
+                "query_parameter_names": []
+              }
+            },
+            "qn_list": [],
+            "switch_motion_freq": -1,
+            "switch_motion": {
+              "url_without_query": "https://i0.hdslb.com/bfs/tvcover/47a4626ee2e783042760a96604ea5196c7b956ee.svga",
+              "query_parameter_names": []
+            },
+            "switch_motion_md5": "426cd349f6bcc6afcccf2402cdd2765c",
+            "switch_toast_frame": {
+              "url_without_query": "https://i0.hdslb.com/bfs/tvcover/830d4d01bc78332de3db70806720f71c1998b089.png",
+              "query_parameter_names": []
+            }
+          },
+          "telecom_ext": {
+            "telecom_vip": false,
+            "telecom_vip_device_allow": false,
+            "telecom_vip_qn_toast": "",
+            "need_report": false,
+            "watch_network_change": false
+          },
+          "enable_p2p_upload": false
+        }
+      }
+    },
+    {
+      "index": 2,
+      "at": "2026-11-07T10:21:29+08:00",
+      "endpoint": "/x/report/heartbeat/mobile",
+      "kind": "FORM",
+      "headers": {
+        "User-Agent": "BiliDroid/1.8.9 (Linux; U; Android 9; zh_CN; MiTV-ASTP0 Build/P) mobi_app/android_tv_yst build/108900 channel/master",
+        "Buvid": "XY0C3400A8153C68CCB76C694103795A27F2C",
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+      },
+      "business_parameters": {
+        "aid": "117564847951309",
+        "cid": "43360849190",
+        "mid": "0",
+        "sid": "0",
+        "epid": "0",
+        "type": "3",
+        "sub_type": "0",
+        "play_mode": "1",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "playlist_type": "",
+        "playlist_id": "",
+        "device": "master",
+        "auto_play": "0",
+        "start_ts": 1794018088,
+        "quality": 64,
+        "total_time": 0,
+        "paused_time": 0,
+        "played_time": 0,
+        "duration": 2694,
+        "play_type": "1",
+        "network_type": "1",
+        "last_play_progress_time": 0,
+        "max_play_progress_time": 0,
+        "extra": "{'session_id':'','resource_id':'','internal_trackid':'','section_id':'','guest_id':'','resource_from':'1','is_preview':'0','watch_right':'','section_type':'','ott_track_id':'','session_more':'','teenager_mode':'0'}"
+      },
+      "transmitted_fields_before_transport_encoding": {
+        "aid": "117564847951309",
+        "appkey": "4409e2ce8ffd12b8",
+        "auto_play": "0",
+        "brand": "xiaomi",
+        "build": "108900",
+        "channel": "master",
+        "child_lock": "0",
+        "cid": "43360849190",
+        "device": "master",
+        "duration": "2694",
+        "epid": "0",
+        "extra": "{'session_id':'','resource_id':'','internal_trackid':'','section_id':'','guest_id':'','resource_from':'1','is_preview':'0','watch_right':'','section_type':'','ott_track_id':'','session_more':'','teenager_mode':'0'}",
+        "last_play_progress_time": "0",
+        "max_play_progress_time": "0",
+        "mid": "0",
+        "mobi_app": "android_tv_yst",
+        "model": "MiTV-ASTP0",
+        "network_type": "1",
+        "paused_time": "0",
+        "platform": "android",
+        "play_mode": "1",
+        "play_type": "1",
+        "played_time": "0",
+        "playlist_id": "",
+        "playlist_type": "",
+        "quality": "64",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "sid": "0",
+        "start_ts": "1794018088",
+        "sub_type": "0",
+        "sys_ver": "28",
+        "teenager_mode": "0",
+        "total_time": "0",
+        "ts": "1794018089",
+        "type": "3",
+        "sign": "<MD5 request signature present>"
+      },
+      "response": {
+        "code": 0,
+        "message": "0",
+        "ttl": 1,
+        "data": {
+          "ts": 1794018088
+        }
+      }
+    },
+    {
+      "index": 3,
+      "at": "2026-11-07T10:21:30+08:00",
+      "endpoint": "/x/report/click/android/tv",
+      "kind": "CLICK",
+      "headers": {
+        "User-Agent": "BiliDroid/1.8.9 (Linux; U; Android 9; zh_CN; MiTV-ASTP0 Build/P) mobi_app/android_tv_yst build/108900 channel/master",
+        "Buvid": "XY0C3400A8153C68CCB76C694103795A27F2C",
+        "Content-Type": "application/octet-stream"
+      },
+      "business_parameters": {
+        "aid": "117564847951309",
+        "cid": "43360849190",
+        "mid": "0",
+        "sid": "0",
+        "epid": "0",
+        "type": "3",
+        "sub_type": "0",
+        "play_mode": "1",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "playlist_type": "",
+        "playlist_id": "",
+        "device": "master",
+        "auto_play": "0",
+        "appkey": "4409e2ce8ffd12b8",
+        "platform": "android",
+        "mobi_app": "android_tv_yst",
+        "build": "108900",
+        "part": "0",
+        "lv": "0",
+        "ftime": "1794018083",
+        "stime": "1794018088",
+        "ogv_copyright_index": "",
+        "extra": "%7B%27session_id%27%3A%27%27%2C%27resource_id%27%3A%27%27%2C%27internal_trackid%27%3A%27%27%2C%27section_id%27%3A%27%27%2C%27guest_id%27%3A%27%27%2C%27resource_from%27%3A%271%27%2C%27is_preview%27%3A%270%27%2C%27watch_right%27%3A%27%27%2C%27section_type%27%3A%27%27%2C%27ott_track_id%27%3A%27%27%2C%27session_more%27%3A%27%27%2C%27teenager_mode%27%3A%270%27%7D",
+        "did": "PgxtWzpbaF5pUWVXK1cr"
+      },
+      "transmitted_fields_before_transport_encoding": {
+        "aid": "117564847951309",
+        "cid": "43360849190",
+        "mid": "0",
+        "sid": "0",
+        "epid": "0",
+        "type": "3",
+        "sub_type": "0",
+        "play_mode": "1",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "playlist_type": "",
+        "playlist_id": "",
+        "device": "master",
+        "auto_play": "0",
+        "appkey": "4409e2ce8ffd12b8",
+        "platform": "android",
+        "mobi_app": "android_tv_yst",
+        "build": "108900",
+        "part": "0",
+        "lv": "0",
+        "ftime": "1794018083",
+        "stime": "1794018088",
+        "ogv_copyright_index": "",
+        "extra": "%7B%27session_id%27%3A%27%27%2C%27resource_id%27%3A%27%27%2C%27internal_trackid%27%3A%27%27%2C%27section_id%27%3A%27%27%2C%27guest_id%27%3A%27%27%2C%27resource_from%27%3A%271%27%2C%27is_preview%27%3A%270%27%2C%27watch_right%27%3A%27%27%2C%27section_type%27%3A%27%27%2C%27ott_track_id%27%3A%27%27%2C%27session_more%27%3A%27%27%2C%27teenager_mode%27%3A%270%27%7D",
+        "did": "PgxtWzpbaF5pUWVXK1cr",
+        "sign": "<SHA-256 signature appended before AES-CBC encryption>"
+      },
+      "response": {
+        "code": 14013,
+        "message": "14013",
+        "ttl": 1,
+        "data": {
+          "rpdid": "aikcgRguJlYcpJhugmRaucacmpRjaplouacmaa"
+        }
+      }
+    },
+    {
+      "index": 4,
+      "at": "2026-11-07T10:21:30+08:00",
+      "endpoint": "/x/report/click/android/tv",
+      "kind": "CLICK",
+      "headers": {
+        "User-Agent": "BiliDroid/1.8.9 (Linux; U; Android 9; zh_CN; MiTV-ASTP0 Build/P) mobi_app/android_tv_yst build/108900 channel/master",
+        "Buvid": "XY0C3400A8153C68CCB76C694103795A27F2C",
+        "Content-Type": "application/octet-stream"
+      },
+      "business_parameters": {
+        "aid": "117564847951309",
+        "cid": "43360849190",
+        "mid": "0",
+        "sid": "0",
+        "epid": "0",
+        "type": "3",
+        "sub_type": "0",
+        "play_mode": "1",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "playlist_type": "",
+        "playlist_id": "",
+        "device": "master",
+        "auto_play": "0",
+        "appkey": "4409e2ce8ffd12b8",
+        "platform": "android",
+        "mobi_app": "android_tv_yst",
+        "build": "108900",
+        "part": "0",
+        "lv": "0",
+        "ftime": "1794018083",
+        "stime": "1794018088",
+        "ogv_copyright_index": "",
+        "extra": "%7B%27session_id%27%3A%27%27%2C%27resource_id%27%3A%27%27%2C%27internal_trackid%27%3A%27%27%2C%27section_id%27%3A%27%27%2C%27guest_id%27%3A%27%27%2C%27resource_from%27%3A%271%27%2C%27is_preview%27%3A%270%27%2C%27watch_right%27%3A%27%27%2C%27section_type%27%3A%27%27%2C%27ott_track_id%27%3A%27%27%2C%27session_more%27%3A%27%27%2C%27teenager_mode%27%3A%270%27%7D",
+        "did": "aikcgRguJlYcpJhugmRaucacmpRjaplouacmaa"
+      },
+      "transmitted_fields_before_transport_encoding": {
+        "aid": "117564847951309",
+        "cid": "43360849190",
+        "mid": "0",
+        "sid": "0",
+        "epid": "0",
+        "type": "3",
+        "sub_type": "0",
+        "play_mode": "1",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "playlist_type": "",
+        "playlist_id": "",
+        "device": "master",
+        "auto_play": "0",
+        "appkey": "4409e2ce8ffd12b8",
+        "platform": "android",
+        "mobi_app": "android_tv_yst",
+        "build": "108900",
+        "part": "0",
+        "lv": "0",
+        "ftime": "1794018083",
+        "stime": "1794018088",
+        "ogv_copyright_index": "",
+        "extra": "%7B%27session_id%27%3A%27%27%2C%27resource_id%27%3A%27%27%2C%27internal_trackid%27%3A%27%27%2C%27section_id%27%3A%27%27%2C%27guest_id%27%3A%27%27%2C%27resource_from%27%3A%271%27%2C%27is_preview%27%3A%270%27%2C%27watch_right%27%3A%27%27%2C%27section_type%27%3A%27%27%2C%27ott_track_id%27%3A%27%27%2C%27session_more%27%3A%27%27%2C%27teenager_mode%27%3A%270%27%7D",
+        "did": "aikcgRguJlYcpJhugmRaucacmpRjaplouacmaa",
+        "sign": "<SHA-256 signature appended before AES-CBC encryption>"
+      },
+      "response": {
+        "code": 0,
+        "message": "0",
+        "ttl": 1,
+        "data": null
+      }
+    },
+    {
+      "index": 5,
+      "at": "2026-11-07T10:21:36+08:00",
+      "endpoint": "/x/report/heartbeat/mobile",
+      "kind": "FORM",
+      "headers": {
+        "User-Agent": "BiliDroid/1.8.9 (Linux; U; Android 9; zh_CN; MiTV-ASTP0 Build/P) mobi_app/android_tv_yst build/108900 channel/master",
+        "Buvid": "XY0C3400A8153C68CCB76C694103795A27F2C",
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+      },
+      "business_parameters": {
+        "aid": "117564847951309",
+        "cid": "43360849190",
+        "mid": "0",
+        "sid": "0",
+        "epid": "0",
+        "type": "3",
+        "sub_type": "0",
+        "play_mode": "1",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "playlist_type": "",
+        "playlist_id": "",
+        "device": "master",
+        "auto_play": "0",
+        "start_ts": 1794018088,
+        "quality": 64,
+        "total_time": 12,
+        "paused_time": 4,
+        "played_time": 8,
+        "duration": 2694,
+        "play_type": "1",
+        "network_type": "1",
+        "last_play_progress_time": 8,
+        "max_play_progress_time": 8,
+        "extra": "{'session_id':'','resource_id':'','internal_trackid':'','section_id':'','guest_id':'','resource_from':'1','is_preview':'0','watch_right':'','section_type':'','ott_track_id':'','session_more':'','teenager_mode':'0'}"
+      },
+      "transmitted_fields_before_transport_encoding": {
+        "aid": "117564847951309",
+        "appkey": "4409e2ce8ffd12b8",
+        "auto_play": "0",
+        "brand": "xiaomi",
+        "build": "108900",
+        "channel": "master",
+        "child_lock": "0",
+        "cid": "43360849190",
+        "device": "master",
+        "duration": "2694",
+        "epid": "0",
+        "extra": "{'session_id':'','resource_id':'','internal_trackid':'','section_id':'','guest_id':'','resource_from':'1','is_preview':'0','watch_right':'','section_type':'','ott_track_id':'','session_more':'','teenager_mode':'0'}",
+        "last_play_progress_time": "8",
+        "max_play_progress_time": "8",
+        "mid": "0",
+        "mobi_app": "android_tv_yst",
+        "model": "MiTV-ASTP0",
+        "network_type": "1",
+        "paused_time": "4",
+        "platform": "android",
+        "play_mode": "1",
+        "play_type": "1",
+        "played_time": "8",
+        "playlist_id": "",
+        "playlist_type": "",
+        "quality": "64",
+        "session": "ede13716dfd24a07a59e6965261f17b3",
+        "sid": "0",
+        "start_ts": "1794018088",
+        "sub_type": "0",
+        "sys_ver": "28",
+        "teenager_mode": "0",
+        "total_time": "12",
+        "ts": "1794018096",
+        "type": "3",
+        "sign": "<MD5 request signature present>"
+      },
+      "response": {
+        "code": 0,
+        "message": "0",
+        "ttl": 1,
+        "data": {
+          "ts": 1794018088
+        }
+      }
+    }
+  ],
+  "final_playback": {
+    "aid": 117564847951309,
+    "cid": 43360849190,
+    "duration": 2694.536,
+    "target_seconds": 8.0,
+    "quality": 64,
+    "decoded_seconds": 8.0,
+    "frames": 239,
+    "wall_seconds": 12.187,
+    "ffmpeg_exit": 0,
+    "audio_decoded": true,
+    "status": "completed"
+  },
+  "click_bodies_verified_against_logged_parameters": true,
+  "not_recorded": [
+    "individual CDN HTTP transactions",
+    "network transfer byte count",
+    "server database writes",
+    "public view count attribution"
+  ]
+}

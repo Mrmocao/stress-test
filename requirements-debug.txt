@@ -1,0 +1,3 @@
+-r requirements.txt
+tzdata==2026.6
+imageio-ffmpeg==0.8.1

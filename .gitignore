@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.private/
+results/
+.debug-runs/
+.debug-server/
+view_monitor/data/
+test-results/
+.env
+.env.*
+*.pyc

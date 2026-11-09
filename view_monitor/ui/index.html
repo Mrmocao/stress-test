@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="monitor-token" content="__MONITOR_TOKEN__"><link rel="icon" href="data:,"><title>播放量监控 · Bilibili</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<header><a href="/" class="brand">Bilibili <span>/</span> 公开数据观测</a><span id="connection">连接中</span></header>
+<main>
+  <div class="heading"><div><h1>播放量监控</h1><p>定时读取指定视频的公开播放量，保留每一次变化。</p></div><span class="mode-label">独立运行 · 只读查询</span></div>
+  <form id="start-form">
+    <label class="video-field">视频链接 / BV / av 号<input id="video" value="BV1S64q69EPN" placeholder="粘贴视频链接或 BV 号" required autocomplete="off"></label>
+    <label>查询间隔 / 秒<input id="interval" type="number" min="15" max="3600" step="1" value="30" required></label>
+    <label>观测时长 / 分钟<input id="minutes" type="number" min="1" max="1440" step="1" value="60" required></label>
+    <button class="primary" id="start" type="submit">开始观测</button><button id="stop" type="button" disabled>停止</button>
+  </form>
+  <p class="form-note">仅查询视频元数据；不会播放视频、下载媒体或发送播放上报。关闭页面后，后台观测仍会继续，达到设定时长后自动结束。</p>
+  <p id="error" role="alert" hidden></p>
+  <div class="video-heading"><div><h2 id="video-title">等待开始观测</h2><p id="video-info">使用上方 BV 号即可开始独立监控。</p></div><span id="status">未启动</span></div>
+  <section class="metrics" aria-label="播放量统计">
+    <div><span>基线播放量</span><strong id="baseline">—</strong><small id="baseline-at">首次成功查询建立基线</small></div>
+    <div><span>最新公开播放量</span><strong id="latest">—</strong><small id="latest-at">等待有效数据</small></div>
+    <div><span>相对基线变化</span><strong id="delta">—</strong><small id="verdict">至少两次成功查询后比较</small></div>
+    <div><span>成功观测次数</span><strong id="success">0</strong><small id="attempts">查询 0 次 · 失败 0 次</small></div>
+  </section>
+  <div class="schedule"><span id="next">下一次查询 —</span><span id="end-at">计划结束 —</span><span id="freshness">数据更新时间 —</span></div>
+  <p id="last-error" class="retry-note" hidden></p>
+  <section class="records">
+    <div class="records-heading"><h2>观测记录</h2><div class="record-controls"><label class="sr-only" for="history">历史观测</label><select id="history"><option value="">当前观测</option></select><label class="changes-only"><input id="only-changes" type="checkbox">只看变化 / 错误</label><button id="export-csv" type="button" disabled>导出 CSV</button><button id="export-json" type="button" disabled>JSON</button></div></div>
+    <div class="table-wrap"><table><thead><tr><th>查询时间 · 北京时间</th><th>播放量</th><th>较基线</th><th>较上次成功查询</th><th>结果</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">开始观测后，记录将自动出现在这里。</td></tr></tbody></table></div>
+    <div class="table-footer"><span id="row-count">0 条记录</span><span>页面显示最近 500 条，导出包含全部记录。</span></div>
+  </section>
+  <div class="notes"><p>公开统计可能存在更新延迟或缓存。“没有变化”只描述当前观测窗口；播放量增加也可能来自其他用户，不能单凭增量认定某次播放被计入。</p><p id="storage">记录会自动保存到本机。</p></div>
+</main>
+</body></html>

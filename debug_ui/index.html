@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="inspector-token" content="__INSPECTOR_TOKEN__">
+  <link rel="icon" href="data:,">
+  <title>TV Playback · 运行观察台</title>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body class="compact">
+<header><a class="brand" href="/">TV<span> / </span>Playback</a><span class="connection" id="connection">连接中</span></header>
+<main>
+  <div class="heading"><div><h1>运行观察台</h1><p>按轮查看公网 IP、接口调用和执行结果。</p></div><span class="runtime">PYTHON · LOCAL INSPECTOR</span></div>
+  <form id="launch">
+    <label>运行模式<select id="mode"><option value="demo">离线演示 · 本地音视频</option><option value="live">真实播放 · 哔哩哔哩接口</option></select></label>
+    <label class="video-field">视频 BV / av 号或链接<input id="video" value="BV1Gq486CEK4" placeholder="BV1Gq486CEK4" autocomplete="off"></label>
+    <label class="seconds-field">最短时长 / 秒<input id="seconds-min" type="number" min="0.1" max="600" step="0.1" value="45" required></label>
+    <label class="seconds-field">最长时长 / 秒<input id="seconds-max" type="number" min="0.1" max="600" step="0.1" value="45" required></label>
+    <label class="concurrency-field">并发数<input id="concurrency" type="number" min="1" max="100" step="1" value="1" required></label>
+    <label class="repeat-field">每路重复次数<input id="repeat" type="number" min="1" max="1000" step="1" value="1" required></label>
+    <label class="check debug-only"><input id="start-paused" type="checkbox">启动时暂停</label>
+    <label class="check"><input id="periodic-heartbeat" type="checkbox" checked>每 15 秒播放心跳（试验）</label>
+    <button id="start" class="primary" type="submit">启动观察 <span>↗</span></button>
+  </form>
+  <section class="device-panel" aria-label="设备配置方案">
+    <label>设备配置方案<select id="device-profile" form="launch" required><option value="">加载配置…</option></select></label>
+    <p id="device-note">整套选择型号、系统、平台、版本和 User-Agent。</p>
+    <pre id="device-preview" aria-label="配置参数预览"></pre>
+    <label id="device-confirmation" class="device-confirmation" hidden><input id="device-confirmed" type="checkbox" form="launch">我已核对以上参数与实际客户端一致（原有配置未经程序核验）</label>
+    <p id="device-effective" role="status">尚未启动；运行后显示实际选择。</p>
+  </section>
+  <section class="proxy-panel" aria-label="公网 IP 切换">
+    <div class="proxy-option"><label class="check"><input id="new-ip" type="checkbox" form="launch">每轮获取新公网 IP</label><label class="retry-field">IP 额外重试<input id="ip-retries" type="number" form="launch" min="0" max="3" step="1" value="0" required></label><span id="proxy-note">默认不额外重试；每次重新提取都可能消耗额度。</span></div>
+    <p id="proxy-status" role="status" aria-live="polite">本次代理未启用</p>
+    <div class="proxy-option"><label class="retry-field">本批 IP 提取上限<input id="ip-limit" type="number" form="launch" min="0" max="400000" step="1" value="0" required></label><label class="retry-field">连续失败暂停 / 轮<input id="failure-limit" type="number" form="launch" min="0" max="1000" step="1" value="5" required></label></div>
+    <p>0 表示关闭。提取上限包含失败尝试与重试；达到上限后当前轮继续完成，后续轮次取消。连续失败按各路完成顺序累计，成功清零，自动暂停后可点“继续”。</p>
+    <p id="limits-status" role="status"></p>
+  </section>
+  <div class="toolbar"><p id="mode-note">各路独立重复执行；失败计数并跳过，等待 5 秒后继续下一轮。</p><div class="controls"><button id="pause" type="button">暂停派发</button><button id="resume" type="button">继续</button><button id="step" class="debug-only" type="button">单步</button><button id="stop" class="danger" type="button">停止全部</button></div></div>
+  <p id="error" role="alert" hidden></p>
+  <section class="metrics" aria-label="运行指标">
+    <div><span>运行状态</span><strong id="status">等待启动</strong><small id="pid">独立 Python 子进程</small></div>
+    <div><span id="current-ip-label">当前公网 IP</span><strong id="current-ip">—</strong><small id="current-proxy">尚未获取代理</small></div>
+    <div><span>已使用 IP</span><strong id="ip-used">0</strong><small id="ip-used-note" title="按本批次成功提取数量累计，含验证失败后重新提取的代理；不去重。实际扣费以服务商账单为准。">本批成功提取，含重试</small></div>
+    <div><span>已结束 / 计划次数</span><strong id="batch-progress">0 / 1</strong><progress id="task-progress" max="1" value="0" aria-label="已结束轮次进度"></progress><small id="batch-summary">等待启动</small></div>
+    <div><span>累计接口调用</span><strong id="api-count">0</strong><small id="event-count">异常 0 次</small></div>
+  </section>
+  <section class="lane-overview" aria-label="并发任务状态"><table><thead><tr><th>并发路</th><th>当前轮次</th><th>公网出口 IP</th><th>实际播放进度</th><th>状态</th></tr></thead><tbody id="lanes"><tr><td colspan="5">启动后显示各路状态和实际解码进度</td></tr></tbody></table></section>
+  <section class="round-history" aria-label="每轮执行结果"><table><thead><tr><th>路 / 轮次</th><th>公网出口 IP</th><th>接口调用</th><th>IP 尝试</th><th>结果 / 原因</th></tr></thead><tbody id="rounds"><tr><td colspan="5">启动后显示每轮结果</td></tr></tbody></table></section>
+  <div class="debug-stats debug-only">本轮解码 <b id="decoded">—</b> s · 帧数 <b id="frames">—</b> · <span id="target">目标时长 —</span> · <span id="wall">解码墙钟时间 —</span><p id="debug-note"></p></div>
+  <div class="workspace">
+    <section class="execution">
+      <div class="panel-header"><nav aria-label="执行视图"><button class="tab selected" data-tab="console">运行日志</button><button class="tab debug-only" data-tab="source">源码</button><button class="tab debug-only" data-tab="events">执行记录</button><button class="tab debug-only" data-tab="state">持久化状态</button></nav><div class="log-options"><select id="debug-lane" class="debug-only" aria-label="调试并发路"><option value="1">第 1 路</option></select><label class="follow"><input id="follow" type="checkbox" checked>自动跟随</label><label class="follow"><input id="debug-details" type="checkbox">详细调试</label></div></div>
+      <div id="source-view" class="tab-view" hidden><div class="source-toolbar"><select id="source-file" aria-label="源码文件"><option>tv_playback.py</option><option>local_signing.py</option><option>buvid_lab.py</option><option>did_lab.py</option></select><span id="location">等待执行位置</span></div><div id="source" class="source" tabindex="0" aria-label="源码内容"></div></div>
+      <div id="events-view" class="tab-view" hidden><div class="filter-row"><input id="event-filter" placeholder="筛选函数、变量或事件" aria-label="筛选执行记录"><span>点击记录可回看变量</span></div><div id="events" class="event-list"></div></div>
+      <div id="console-view" class="tab-view"><pre id="console" class="console" tabindex="0" aria-label="关键执行日志">等待启动：这里显示每轮 IP、接口返回码、耗时和执行结果。</pre></div>
+      <div id="state-view" class="tab-view" hidden><pre id="state" class="state">尚未生成 state.json</pre></div>
+      <div class="panel-footer"><span id="position">尚未启动</span><span id="thread">—</span></div>
+    </section>
+    <aside class="inspector">
+      <div class="panel-header"><h2>变量检查器</h2><span id="variable-count">0 个</span></div>
+      <div class="scope-row"><select id="scope" aria-label="函数作用域"><option value="">当前执行作用域</option></select><input id="variable-filter" placeholder="查找变量名称" aria-label="查找变量名称"></div>
+      <div id="variables" class="variables"><div class="empty">变量在执行时出现。<br>使用「启动时暂停」和「单步」观察创建过程。</div></div>
+      <div class="inspector-note">蓝色行是<strong>即将执行</strong>的源码。变量差异来自上一行执行后的快照；局部变量按函数调用隔离。</div>
+    </aside>
+  </div>
+  <section class="changes"><div class="section-heading"><h2>最近变量变化</h2><span>创建 / 修改 / 移除 · 点击回看</span></div><div id="changes" class="change-list"><p class="empty">启动后将实时显示变化记录。</p></div></section>
+  <footer><div><span id="run-dir">每次启动保留独立运行目录</span><span id="history-note"></span></div><p>关键日志见 key-events.jsonl；任务结束后 summary.json 保存成功、失败和每轮结果。停止全部会结束所有并发路。</p><p class="debug-only">暂停仅冻结 Python，已启动的 FFmpeg 可能继续解码。完整调试快照见 trace.jsonl，原始请求仍保存在 .private。</p></footer>
+</main>
+</body>
+</html>

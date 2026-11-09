@@ -1,0 +1,789 @@
+#!/usr/bin/env python3
+"""One real, paced playback per selected video; preserve every observation."""
+import argparse
+import csv
+import hashlib
+import http.client
+import json
+import math
+import os
+from pathlib import Path
+import queue
+import random
+import re
+import subprocess
+import ssl
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from local_signing import APP_KEY, sign_query
+from buvid_lab import generate_buvid, generate_mac
+from did_lab import generate_local_identity
+from playback_runtime import ffmpeg_executable, lock_experiment
+from execution_budget import BudgetExceeded
+from device_profiles import baseline_profile
+from playback_heartbeat import HeartbeatSchedule, heartbeat_interval
+
+ROOT = Path(__file__).resolve().parent
+DEVICE_PROFILE = baseline_profile()
+UA = DEVICE_PROFILE['user_agent']
+API_ROOT = 'https://api.bilibili.com'
+HTTP_OPENER = None
+HTTP_PROXY = None
+NETWORK_OBSERVER = None
+PROGRESS_OBSERVER = None
+RUN_BUDGET = None
+READ_ATTEMPTS = 2
+READ_RETRY_DELAY = 5
+HEARTBEAT_INTERVAL = 0
+
+
+def playback_progress(**progress):
+    if PROGRESS_OBSERVER is not None:
+        PROGRESS_OBSERVER(progress)
+
+
+class PlaybackFailure(RuntimeError):
+    """A public failure summary constructed without private URLs or responses."""
+
+
+class RequestFailure(PlaybackFailure):
+    def __init__(self, message, *, retryable=False):
+        super().__init__(message)
+        self.retryable = retryable
+
+
+def request_failure(event, error):
+    """Summarize transport failures without exposing signed URLs or vendor text."""
+    cause = error.reason if isinstance(error, urllib.error.URLError) else error
+    status = event.get('http_status')
+    if isinstance(error, urllib.error.HTTPError):
+        status = event['http_status'] = error.code
+    timeout = isinstance(cause, TimeoutError)
+    disconnected = isinstance(cause, (ConnectionError, http.client.IncompleteRead, http.client.RemoteDisconnected))
+    retryable = (timeout or disconnected or status in (502, 503, 504)) and not isinstance(cause, ssl.SSLCertVerificationError)
+    if timeout:
+        detail = '读取响应正文超时' if event.get('phase') == 'response_body' else '连接或等待响应头超时'
+    elif status is not None and status >= 400:
+        detail = f'HTTP {status}'
+    elif disconnected:
+        detail = '连接中断，响应内容未完整收到'
+    elif isinstance(cause, ssl.SSLCertVerificationError):
+        detail = 'TLS 证书校验失败'
+    elif event.get('code') is not None:
+        detail = f'业务接口返回 code={event["code"]}'
+    else:
+        detail = f'响应未成功处理（{type(error).__name__}）'
+    if isinstance(error, BudgetExceeded):
+        detail, retryable = str(error), False
+    event.update(error_type=type(error).__name__, error_message=detail,
+                 cause_type=type(cause).__name__)
+    for field in ('errno', 'winerror'):
+        value = getattr(cause, field, None)
+        if isinstance(value, int):
+            event[field] = value
+    if retryable and event['method'] == 'GET' and event['attempt'] < event['max_attempts']:
+        delay = 0.5 if RUN_BUDGET else READ_RETRY_DELAY
+        if RUN_BUDGET is None or RUN_BUDGET.can_retry(delay):
+            event['retry_in'] = delay
+        else:
+            retryable = False
+            event['error_message'] += '；剩余寿命不足，取消重试'
+    return RequestFailure(f'{event["method"]} {event["path"]}：{detail}（第 {event["attempt"]}/{event["max_attempts"]} 次）',
+                          retryable=retryable)
+
+
+def read_attempts(operation, attempts=READ_ATTEMPTS):
+    for attempt in range(1, attempts + 1):
+        try:
+            return operation(attempt, attempts)
+        except RequestFailure as error:
+            if not error.retryable or attempt == attempts:
+                raise
+        delay = 0.5 if RUN_BUDGET else READ_RETRY_DELAY
+        if RUN_BUDGET and not RUN_BUDGET.can_retry(delay):
+            raise BudgetExceeded('代理剩余寿命不足，取消重试')
+        time.sleep(delay)
+
+
+def decoder_failure(log, code):
+    match = re.search(r'HTTP error ([45][0-9]{2})\b', log)
+    if match:
+        status = int(match.group(1))
+        return f'视频流请求失败：HTTP {status}（代理或视频源返回，业务接口成功不代表视频流可用）', status
+    if 'timed out' in log.lower():
+        return '视频流读取超时', None
+    if any(text in log for text in ('Stream ends prematurely', 'End of file', 'IO error:')):
+        return '视频流连接中断或数据不完整', None
+    return f'音视频解码未达到播放要求（FFmpeg 退出码 {code}）', None
+
+
+def playback_failure_message(error):
+    if isinstance(error, (PlaybackFailure, BudgetExceeded)):
+        return str(error)
+    if isinstance(error, urllib.error.HTTPError):
+        return f'播放请求失败：HTTP {error.code}'
+    if isinstance(error, TimeoutError):
+        return '播放请求或解码超时'
+    if isinstance(error, urllib.error.URLError):
+        return '播放网络连接失败或超时'
+    return f'播放失败（{type(error).__name__}）；详细信息已保存到本轮私有日志'
+
+
+SERIES_PATH = '/x/series/archives?mid=525916013&series_id=673054&only_normal=true&sort=desc&pn=1&ps=100'
+# PlayerStat static constants, from this APK; not an account credential.
+AES_KEY = bytes([102,100,54,98,54,51,57,100,98,99,102,102,48,99,50,97,49,98,48,51,98,51,56,57,101,99,55,54,51,99,52,98])
+AES_IV = bytes([55,55,98,48,55,97,54,55,50,100,53,55,100,54,52,99])
+CLICK_SALT = bytes([57,99,97,102,97,54,52,54,54,97,48,50,56,98,102,98])
+
+
+def now():
+    return datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds')
+
+
+def save(path, data):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + '.tmp')
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    # Windows readers can briefly hold a handle without FILE_SHARE_DELETE.
+    # Retry only the atomic file replacement, never replay network operations.
+    for attempt in range(6):
+        try:
+            tmp.replace(path)
+            return
+        except PermissionError:
+            if os.name != 'nt' or attempt == 5:
+                raise
+            time.sleep(0.02 * (attempt + 1))
+
+
+def read(path):
+    return json.loads(Path(path).read_text(encoding='utf-8'))
+
+
+def open_network(request, timeout=25):
+    if HTTP_OPENER is not None:
+        return HTTP_OPENER.open(request, timeout=timeout)
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
+def request_timeout(path=''):
+    maximum = 12 if urllib.parse.urlsplit(path).path == '/x/web-interface/view' else 8
+    return RUN_BUDGET.timeout(maximum) if RUN_BUDGET else maximum
+
+
+def read_response(response, event, deadline):
+    from network_deadline import read_json_body, ResponseEncodingError
+    try:
+        return read_json_body(response, event, deadline)
+    except ResponseEncodingError:
+        raise PlaybackFailure('接口压缩响应损坏、不完整或编码不支持') from None
+    except ValueError:
+        raise PlaybackFailure('接口响应超过 2 MiB 上限') from None
+
+
+def notify_network(event, started):
+    if NETWORK_OBSERVER is not None:
+        NETWORK_OBSERVER({key: event[key] for key in
+                          ('path', 'method', 'http_status', 'code', 'error_type', 'identity_update',
+                           'phase', 'attempt', 'max_attempts', 'retry_in', 'error_message',
+                           'cause_type', 'errno', 'winerror', 'bytes_read', 'content_length',
+                           'heartbeat_phase', 'played_time', 'content_encoding', 'decoded_bytes') if key in event},
+                         round((time.monotonic() - started) * 1000))
+
+
+def public_json(path):
+    return read_attempts(lambda attempt, maximum: _public_json_once(path, attempt, maximum))
+
+
+def _public_json_once(path, attempt, max_attempts):
+    req = urllib.request.Request(API_ROOT + path, headers={'User-Agent': UA, 'Accept-Encoding': 'gzip'})
+    started = time.monotonic()
+    event = {'path': urllib.parse.urlsplit(path).path, 'method': 'GET',
+             'attempt': attempt, 'max_attempts': max_attempts, 'phase': 'connecting'}
+    try:
+        timeout = request_timeout(path)
+        with open_network(req, timeout=timeout) as resp:
+            event['http_status'] = resp.status
+            event['phase'] = 'response_body'
+            data = json.loads(read_response(resp, event, started + timeout))
+        event['phase'] = 'response_complete'
+        event['code'] = data.get('code')
+        if data.get('code') != 0:
+            raise RuntimeError(f'Public API code={data.get("code")}: {data.get("message")}')
+        return data['data']
+    except Exception as error:
+        raise request_failure(event, error) from None
+    finally:
+        notify_network(event, started)
+
+
+def series_snapshot():
+    start = now()
+    data = public_json(SERIES_PATH)
+    rows = data['archives']
+    if len(rows) != data['page']['total'] or len({r['bvid'] for r in rows}) != len(rows):
+        raise RuntimeError('Series response is incomplete or contains duplicate BVIDs')
+    return {'started_at': start, 'finished_at': now(), 'archives': rows}
+
+
+def observe(run_dir, label):
+    snapshot = series_snapshot()
+    path = run_dir / f'{label}.json'
+    if path.exists():
+        raise FileExistsError(path)
+    save(path, snapshot)
+    return snapshot
+
+
+def click_payload(params):
+    """PlayerStat.d: sorted raw pairs, SHA256(message || salt), AES-CBC."""
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.primitives.padding import PKCS7
+    text = '&'.join(f'{k}={params[k]}' for k in sorted(params))
+    signature = hashlib.sha256(text.encode() + CLICK_SALT).hexdigest()
+    plaintext = (text + '&sign=' + signature).encode()
+    padder = PKCS7(128).padder()
+    padded = padder.update(plaintext) + padder.finalize()
+    enc = Cipher(algorithms.AES(AES_KEY), modes.CBC(AES_IV)).encryptor()
+    return enc.update(padded) + enc.finalize()
+
+
+class TVClient:
+    def __init__(self, private_dir, event_file, *, buvid=None):
+        self.private_dir = private_dir
+        private_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(private_dir, 0o700)
+        self.event_file = event_file
+        self.counter = len(list(private_dir.glob('request-*.json')))
+        self.common = dict(DEVICE_PROFILE['common'])
+        self.appkey = APP_KEY
+        # Generate once per client/run; reuse across playurl, heartbeat and click.
+        # An explicit empty string preserves legacy experiments without this header.
+        self.buvid = generate_buvid('mac', generate_mac()) if buvid is None else buvid
+
+    def sign(self, params):
+        return sign_query(params)
+
+    def request(self, path, params, kind='GET'):
+        # Only read queries can be replayed. Reports retain one transport attempt.
+        return read_attempts(lambda attempt, maximum: self._request_once(path, params, kind, attempt, maximum),
+                             attempts=READ_ATTEMPTS if kind == 'GET' else 1)
+
+    def _request_once(self, path, params, kind, attempt, max_attempts):
+        self.counter += 1
+        index = self.counter
+        payload = None
+        url = API_ROOT + path
+        headers = {'User-Agent': UA, 'Accept-Encoding': 'gzip'}
+        if self.buvid:
+            headers['Buvid'] = self.buvid
+        if kind == 'CLICK':
+            payload = click_payload(params)
+            headers['Content-Type'] = 'application/octet-stream'
+        else:
+            signed = self.sign({**self.common, **{k: str(v) for k, v in params.items()}, 'ts': str(int(time.time()))})
+            if kind == 'GET':
+                url += '?' + signed
+            else:
+                payload = signed.encode()
+                headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8'
+        save(self.private_dir / f'request-{index:03}.json',
+             {'at': now(), 'url': url, 'params': params, 'kind': kind, 'headers': headers})
+        if payload is not None:
+            (self.private_dir / f'request-{index:03}.body').write_bytes(payload)
+        started = time.monotonic()
+        event = {'at': now(), 'path': path, 'kind': kind, 'method': 'GET' if kind == 'GET' else 'POST',
+                 'attempt': attempt, 'max_attempts': max_attempts, 'phase': 'connecting',
+                 'fields': sorted(params), 'aid': params.get('aid', params.get('object_id')),
+                 'cid': params.get('cid'), 'played_time': params.get('played_time')}
+        if path == '/x/report/heartbeat/mobile':
+            event['heartbeat_phase'] = getattr(self, 'heartbeat_phase', None)
+        try:
+            req = urllib.request.Request(url, data=payload, headers=headers)
+            timeout = request_timeout(path)
+            try:
+                with open_network(req, timeout=timeout) as response:
+                    status = event['http_status'] = response.status
+                    event['phase'] = 'response_body'
+                    raw = read_response(response, event, started + timeout)
+            except urllib.error.HTTPError as error:
+                status = event['http_status'] = error.code
+                event['phase'] = 'response_body'
+                with error:
+                    raw = read_response(error, event, started + timeout)
+            event['phase'] = 'response_complete'
+            (self.private_dir / f'response-{index:03}.body').write_bytes(raw)
+            try:
+                result = json.loads(raw)
+            except ValueError:
+                result = {}
+            event.update(http_status=status, code=result.get('code'), message=result.get('message'))
+            data = result.get('data')
+            replacement_did = data.get('rpdid') if isinstance(data, dict) else None
+            # TV PlayerStat consumes a nonempty rpdid even from a nonzero API
+            # response. Limit this compatibility branch to the observed 14013.
+            identity_update = (status == 200 and kind == 'CLICK'
+                               and path == '/x/report/click/android/tv'
+                               and result.get('code') == 14013
+                               and isinstance(replacement_did, str) and bool(replacement_did.strip()))
+            if identity_update:
+                event['identity_update'] = True
+            if status != 200 or (result.get('code') != 0 and not identity_update):
+                raise RuntimeError(f'{path}: HTTP {status}, API {result.get("code")}, {result.get("message")}')
+            return result
+        except Exception as error:
+            raise request_failure(event, error) from None
+        finally:
+            notify_network(event, started)
+            with self.event_file.open('a', encoding='utf-8') as file:
+                file.write(json.dumps(event, ensure_ascii=False) + '\n')
+
+
+def extra_string(session):
+    # PlayerReportUtil uses single-quoted pairs, not JSON.
+    values = {'session_id': '', 'resource_id': '', 'internal_trackid': '', 'section_id': '',
+              'guest_id': '', 'resource_from': '1', 'is_preview': '0', 'watch_right': '',
+              'section_type': '', 'ott_track_id': '', 'session_more': '', 'teenager_mode': '0'}
+    return '{' + ','.join(f"'{k}':'{v}'" for k, v in values.items()) + '}'
+
+
+def report_click(client, params, run_state, run_dir, item):
+    """Accept only code=0; correct did once after the observed 14013 response."""
+    payload = dict(params)
+    item.update(play_click_accepted=False, click_retry_count=0, click_attempts=[])
+    for attempt in range(2):
+        response = client.request('/x/report/click/android/tv', payload, 'CLICK')
+        code = response.get('code', 0)
+        item['click_api_code'] = code
+        item['click_attempts'].append({'code': code, 'did_present': bool(payload.get('did')),
+                                       'did_sha256': hashlib.sha256(payload.get('did', '').encode()).hexdigest()})
+        replacement = (response.get('data') or {}).get('rpdid')
+        if isinstance(replacement, str) and replacement.strip():
+            validate_did(replacement)
+            item['returned_rpdid'] = replacement
+            run_state['did'] = replacement
+            save(run_dir / 'state.json', run_state)
+        if code == 0:
+            item['play_click_accepted'] = True
+            return response
+        if code != 14013 or not isinstance(replacement, str) or not replacement.strip() or attempt == 1:
+            raise RuntimeError(f'Playback click was not accepted: code={code}; no further retries')
+        # Keep the original session, content IDs and playback timestamps. Only
+        # the server-supplied report identity changes; the first event failed.
+        item.update(did_refreshed=True, click_retry_count=1)
+        payload['did'] = replacement
+    raise AssertionError('unreachable')
+
+
+def play_one(client, video, run_state, run_dir, target_seconds):
+    bvid = video['bvid']
+    item = {'bvid': bvid, 'started_at': now(), 'status': 'attempted', 'session': uuid.uuid4().hex}
+    label = f'{run_state["window_id"]} {bvid}' if 'window_id' in run_state else bvid
+    if 'window_id' in run_state:
+        item['window_id'] = run_state['window_id']
+    # Persist before any playback/report; interrupted attempts are never auto-replayed.
+    run_state['attempts'][bvid] = item
+    save(run_dir / 'state.json', run_state)
+    private = client.private_dir
+    playback_progress(stage='resolving', decoded_seconds=0, frames=0, target_seconds=target_seconds)
+    try:
+        view = video if all(key in video for key in ('aid', 'cid', 'state', 'stat')) else public_json('/x/web-interface/view?bvid=' + bvid)
+        if view['aid'] != video['aid'] or view['state'] != 0:
+            raise RuntimeError('Video identity/state mismatch')
+        aid, cid = view['aid'], view['cid']
+        item.update(aid=aid, cid=cid, before_view=view['stat']['view'])
+        result = client.request('/x/tv/playurl', {'object_id': aid, 'cid': cid, 'playurl_type': 1,
+                                'qn': 16, 'fnver': 0, 'fnval': 0, 'device_name': 'android',
+                                'source_type': 1, 'force_host': 2})['data']
+        if result.get('is_drm') or result.get('is_preview'):
+            raise RuntimeError('Response is DRM-protected or a preview')
+        media = result.get('durl') or []
+        if len(media) != 1 or not media[0].get('url'):
+            raise RuntimeError('Expected one progressive MP4 stream')
+        url = media[0]['url']
+        duration = float(result['timelength']) / 1000
+        target = min(target_seconds, duration)
+        if RUN_BUDGET:
+            RUN_BUDGET.begin_playback(target)
+        item.update(duration=duration, target_seconds=target, quality=result['quality'],
+                    media_host=urllib.parse.urlsplit(url).hostname,
+                    media_url_sha256=hashlib.sha256(url.encode()).hexdigest())
+        playback_progress(stage='connecting', decoded_seconds=0, frames=0, target_seconds=target)
+        output = private / f'{bvid}.ffmpeg.log'
+        progress_file = run_dir / f'{bvid}.progress.jsonl'
+        command = [ffmpeg_executable(), '-hide_banner', '-nostdin', '-loglevel', 'info', '-re',
+                   '-rw_timeout', '3000000' if RUN_BUDGET else '8000000', '-user_agent', UA,
+                   '-threads', '2', '-filter_threads', '1', '-filter_complex_threads', '1',
+                   *(['-http_proxy', HTTP_PROXY] if HTTP_PROXY else []), '-i', url,
+                   '-t', str(target), '-threads', '1', '-map', '0:v:0', '-map', '0:a:0',
+                   '-progress', 'pipe:1', '-stats_period', '1', '-nostats', '-f', 'null', '-']
+        first_frame = False
+        decoded = frames = 0
+        start_clock = time.monotonic()
+        cadence = HeartbeatSchedule(HEARTBEAT_INTERVAL, start_clock)
+        item.update(heartbeat_interval=HEARTBEAT_INTERVAL, periodic_heartbeats=[])
+        start_ts = int(time.time())
+        events = []
+        extra = extra_string(item['session'])
+        identity = {'aid': str(aid), 'cid': str(cid), 'mid': '0', 'sid': '0', 'epid': '0',
+                    'type': '3', 'sub_type': '0', 'play_mode': '1', 'session': item['session'],
+                    'playlist_type': '', 'playlist_id': '', 'device': 'master', 'auto_play': '0'}
+
+        def heartbeat(played, elapsed):
+            return {**identity, 'start_ts': start_ts, 'quality': result['quality'],
+                    'total_time': elapsed, 'paused_time': max(0, elapsed - played),
+                    'played_time': played, 'duration': math.floor(duration), 'play_type': '1',
+                    'network_type': '1', 'last_play_progress_time': played,
+                    'max_play_progress_time': played, 'extra': extra}
+
+        def send_heartbeat(phase, played, elapsed):
+            client.heartbeat_phase = phase
+            try:
+                return client.request('/x/report/heartbeat/mobile', heartbeat(played, elapsed), 'FORM')
+            finally:
+                client.heartbeat_phase = None
+
+        with output.open('w', encoding='utf-8') as stderr, progress_file.open('w', encoding='utf-8') as progress:
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr, text=True,
+                                    env={**os.environ, 'no_proxy': '', 'NO_PROXY': ''} if HTTP_PROXY else None)
+            item.update(decoder_started_epoch=time.time(), decoder_pid=proc.pid)
+            lines = queue.Queue()
+
+            def reader():
+                try:
+                    for line in proc.stdout:
+                        lines.put(line)
+                finally:
+                    lines.put(None)
+
+            thread = threading.Thread(target=reader, daemon=True)
+            thread.start()
+            block = {}
+            primary_error = cleanup_error = None
+            try:
+                while True:
+                    if RUN_BUDGET:
+                        RUN_BUDGET.check()
+                    if time.monotonic() - start_clock > target + 90:
+                        raise TimeoutError('Decoder exceeded playback budget')
+                    try:
+                        line = lines.get(timeout=1)
+                    except queue.Empty:
+                        continue
+                    if line is None:
+                        break
+                    key, _, value = line.strip().partition('=')
+                    block[key] = value
+                    if key != 'progress':
+                        continue
+                    progress.write(json.dumps({'at': now(), **block}) + '\n')
+                    progress.flush()
+                    frames = max(frames, int(block.get('frame', 0)))
+                    decoded = max(decoded, int(block.get('out_time_us', 0)) / 1_000_000)
+                    playback_progress(stage='playing', decoded_seconds=decoded, frames=frames,
+                                      target_seconds=target, wall_seconds=round(time.monotonic() - start_clock, 2))
+                    if frames > 0 and decoded > 0 and not first_frame:
+                        first_frame = True
+                        item['first_frame_epoch'] = time.time()
+                        start_ts = int(time.time() - decoded)
+                        item['failure_stage'] = 'start_heartbeat'
+                        send_heartbeat('start', 0, 0)
+                        events.append('start_heartbeat')
+                        click = {**identity, 'appkey': client.appkey,
+                                 **{k: DEVICE_PROFILE['common'][k] for k in ('platform', 'mobi_app', 'build')},
+                                 'part': '0', 'lv': '0',
+                                 'ftime': str(run_state['ftime']), 'stime': str(start_ts),
+                                 'ogv_copyright_index': '',
+                                 'extra': urllib.parse.quote_plus(extra, safe='*').replace('~', '%7E')}
+                        if run_state.get('did'):
+                            click['did'] = run_state['did']
+                            item['sent_did'] = run_state['did']
+                        item['failure_stage'] = 'play_click'
+                        report_click(client, click, run_state, run_dir, item)
+                        events.append('play_click')
+                        item.pop('failure_stage', None)
+                        print(f'{label}: first decoded frame; start reports accepted (did corrections={item["click_retry_count"]})', flush=True)
+                    clock_now = time.monotonic()
+                    played = cadence.take(decoded, clock_now - start_clock, clock_now, target,
+                                          ended=block.get('progress') == 'end' or proc.poll() is not None)
+                    if played is not None and 'play_click' in events:
+                        observation = {'played_time': played, 'status': 'unconfirmed'}
+                        item['periodic_heartbeats'].append(observation)
+                        try:
+                            send_heartbeat('periodic', played, math.floor(clock_now - start_clock))
+                            observation['status'] = 'accepted'
+                            events.append('periodic_heartbeat')
+                        except Exception as error:
+                            observation['error'] = playback_failure_message(error)
+                        save(run_dir / 'state.json', run_state)
+                    block = {}
+                code = proc.wait(timeout=10)
+            except Exception as error:
+                primary_error = error
+            finally:
+                if proc.poll() is None:
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        proc.wait(timeout=5)
+                proc.stdout.close()
+                thread.join(timeout=2)
+                elapsed = time.monotonic() - start_clock
+                item.update(decoded_seconds=decoded, frames=frames, wall_seconds=round(elapsed, 3),
+                            ffmpeg_exit=proc.returncode, accepted_events=events,
+                            decoder_finished_epoch=time.time())
+                playback_progress(stage='finishing', decoded_seconds=decoded, frames=frames,
+                                  target_seconds=target, wall_seconds=round(elapsed, 2))
+                log = output.read_text(encoding='utf-8', errors='replace')
+                item['audio_decoded'] = bool(re.search(r'audio:\s*[1-9][0-9]*(?:\.[0-9]+)?(?:KiB|kB|B)', log))
+                media_complete = (proc.returncode == 0 and frames > 0 and decoded >= target - .75
+                                  and elapsed >= decoded - 1 and item['audio_decoded'])
+                item['media_status'] = 'completed' if media_complete else 'failed'
+                if primary_error is None and not media_complete:
+                    reason, status = decoder_failure(log, proc.returncode)
+                    item.update(failure_stage='media', media_http_status=status)
+                    primary_error = PlaybackFailure(reason)
+                if 'start_heartbeat' in events:
+                    if RUN_BUDGET:
+                        RUN_BUDGET.begin_finishing()
+                    played = math.floor(min(decoded, elapsed))
+                    try:
+                        send_heartbeat('end', played, math.floor(elapsed))
+                        events.append('end_heartbeat')
+                    except Exception as error:
+                        cleanup_error = error
+                        item['cleanup_error'] = playback_failure_message(error)
+                periodic_failed = any(h['status'] != 'accepted' for h in item['periodic_heartbeats'])
+                item['report_status'] = 'completed' if not periodic_failed and all(e in events for e in ('start_heartbeat', 'play_click', 'end_heartbeat')) else 'unconfirmed'
+        if primary_error is not None:
+            raise primary_error
+        if cleanup_error is not None:
+            item['failure_stage'] = 'end_heartbeat'
+            raise cleanup_error
+        if periodic_failed:
+            item['failure_stage'] = 'periodic_heartbeat'
+            raise PlaybackFailure('周期心跳存在未确认请求；未自动重发，详见心跳日志')
+        item['status'] = 'completed'
+    except Exception as error:
+        item['status'] = 'failed'
+        # Error strings may contain signed CDN URLs. Keep details private.
+        item['error_type'] = type(error).__name__
+        item['failure_reason'] = playback_failure_message(error)
+        if item.get('media_status') == 'completed':
+            item['failure_reason'] = '播放完成，上报未确认；' + item['failure_reason']
+        (private / f'{bvid}.error.txt').write_text(str(error), encoding='utf-8')
+    finally:
+        item['finished_at'] = now()
+        save(run_dir / 'state.json', run_state)
+        playback_progress(stage=item['status'], decoded_seconds=item.get('decoded_seconds', 0),
+                          frames=item.get('frames', 0), target_seconds=item.get('target_seconds', target_seconds),
+                          wall_seconds=item.get('wall_seconds', 0), media_status=item.get('media_status', 'not_started'),
+                          report_status=item.get('report_status', 'not_started'))
+    print(f'{label}: {item["status"]}, decoded={item.get("decoded_seconds", 0):.2f}s', flush=True)
+    return item
+
+
+def resolve_video(video_id):
+    if re.fullmatch(r'BV[0-9A-Za-z]{10}', video_id):
+        query = 'bvid=' + video_id
+    elif re.fullmatch(r'(?:av)?[1-9][0-9]*', video_id):
+        query = 'aid=' + video_id.removeprefix('av')
+    else:
+        raise ValueError('video-id must be a BVID, av ID or positive numeric AID')
+    data = public_json('/x/web-interface/view?' + query + '&_research_time=' + str(time.time_ns()))
+    if data.get('state') != 0 or not data.get('bvid') or not data.get('aid'):
+        raise ValueError('Video is unavailable or missing identity fields')
+    return data
+
+
+def play_window(video_id, window_id, buvid, run_dir, seconds=60, *, did=None, start_barrier=None):
+    """One isolated playback instance. Existing output directories are never replayed."""
+    run_dir = Path(run_dir).resolve()
+    try:
+        if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', window_id):
+            raise ValueError('window-id must contain 1..64 letters, digits, underscores or hyphens')
+        if not 0 < seconds <= 600:
+            raise ValueError('seconds must be >0 and <=600')
+        if buvid is not None and not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', buvid):
+            raise ValueError('buvid must contain 1..64 letters, digits, underscores or hyphens')
+        validate_did(did)
+        # Atomic reservation prevents concurrent launches into the same output folder.
+        run_dir.mkdir(parents=True, exist_ok=False)
+        did_source = 'explicit' if did is not None else 'generated'
+        if buvid is None or did is None:
+            identity = generate_local_identity()
+            if buvid is None:
+                buvid = identity['buvid']
+            if did is None:
+                did = identity['did']
+        private = ROOT / '.private' / 'windows' / hashlib.sha256(str(run_dir).encode()).hexdigest()[:24]
+        client = TVClient(private, run_dir / 'events.jsonl', buvid=buvid)
+        state = {'window_id': window_id, 'video_id': video_id, 'created_at': now(),
+                 'buvid': client.buvid, 'ftime': int(time.time()), 'seconds': seconds,
+                 'initial_did': did, 'did': did or '', 'device_profile': DEVICE_PROFILE,
+                 'initial_did_source': did_source,
+                 'private_dir': str(private), 'attempts': {}, 'status': 'preparing'}
+        save(run_dir / 'state.json', state)
+        playback_progress(stage='resolving', decoded_seconds=0, frames=0, target_seconds=seconds)
+        video = resolve_video(video_id)
+        if start_barrier is not None:
+            start_barrier.wait()
+    except BaseException as error:
+        # Persist setup failures too, so observers do not see a stuck preparing state.
+        if 'state' in locals():
+            state.update(status='failed', error_type=type(error).__name__,
+                         failure_reason=playback_failure_message(error), finished_at=now())
+            save(run_dir / 'state.json', state)
+        if start_barrier is not None:
+            start_barrier.abort()
+        raise
+    state.update(status='playing', released_at=now())
+    save(run_dir / 'state.json', state)
+    item = play_one(client, video, state, run_dir, seconds)
+    state.update(status=item['status'], finished_at=now())
+    save(run_dir / 'state.json', state)
+    return item
+
+
+def validate_did(did):
+    # 实验输入约束，不是服务端校验规则。允许 URL-safe Base64 及常见编码字符，
+    # 拒绝会破坏原客户端未转义 key=value&... 正文的字符。
+    if did is not None and (not re.fullmatch(r'[A-Za-z0-9_+/=|~().\x27-]{1,1024}', did)):
+        raise ValueError('did must be 1..1024 identifier characters without whitespace or &')
+
+
+def make_report(run_dir):
+    state = read(run_dir / 'state.json')
+    snapshots = sorted(run_dir.glob('observation-*.json'))
+    baseline = {v['bvid']: v['stat']['view'] for v in read(run_dir / 'baseline.json')['archives']}
+    latest = read(snapshots[-1]) if snapshots else read(run_dir / 'baseline.json')
+    current = {v['bvid']: v['stat']['view'] for v in latest['archives']}
+    rows = []
+    for group in ['videos', 'controls']:
+        for v in state[group]:
+            bvid = v['bvid']; item = state['attempts'].get(bvid, {})
+            after = current.get(bvid)
+            rows.append({'group': group, 'bvid': bvid, 'title': v['title'], 'before': baseline[bvid],
+                         'after': after, 'delta': after - baseline[bvid] if after is not None else None,
+                         'playback': item.get('status', 'not_played'), 'decoded_seconds': item.get('decoded_seconds', 0)})
+    with (run_dir / 'comparison.csv').open('w', newline='', encoding='utf-8-sig') as file:
+        writer = csv.DictWriter(file, fieldnames=rows[0].keys()); writer.writeheader(); writer.writerows(rows)
+    save(run_dir / 'comparison.json', {'observed_at': latest['finished_at'], 'rows': rows,
+                                      'causation_established': False})
+    return rows
+
+
+def main():
+    global HEARTBEAT_INTERVAL
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', nargs='?', default='play', metavar='VIDEO_ID|ACTION',
+                        help='Video ID for one playback, or run/observe/report/play')
+    parser.add_argument('--run-dir', type=Path)
+    parser.add_argument('--video-id', help='BVID, av ID or numeric AID for one playback window')
+    parser.add_argument('--buvid', help='Buvid for this instance; omitted means a new MAC-based Buvid')
+    parser.add_argument('--did', help='Initial report did; omitted means a new local DID for play')
+    parser.add_argument('--limit', type=int, default=10, help='Maximum new attempts this invocation')
+    parser.add_argument('--heartbeat-interval', type=int, choices=(0, 15), default=0,
+                        help='Experimental real-playback heartbeat: 0=off, 15=seconds')
+    duration = parser.add_mutually_exclusive_group()
+    duration.add_argument('--seconds', type=float, help='Fixed playback duration in seconds')
+    duration.add_argument('--max-seconds', type=float,
+                          help='Random playback upper bound for play (45..600, default: 60)')
+    args = parser.parse_args()
+    HEARTBEAT_INTERVAL = heartbeat_interval(args.heartbeat_interval)
+    if args.action not in ('run', 'observe', 'report', 'play'):
+        if not re.fullmatch(r'(?:BV[0-9A-Za-z]{10}|(?:av)?[1-9][0-9]*)', args.action):
+            parser.error('expected a BVID, av ID, numeric AID or run/observe/report/play')
+        if args.video_id is not None:
+            parser.error('specify the video ID either positionally or with --video-id')
+        args.video_id, args.action = args.action, 'play'
+    if args.max_seconds is not None:
+        if args.action != 'play':
+            parser.error('--max-seconds applies only to play')
+        if not 45 <= args.max_seconds <= 600:
+            parser.error('max-seconds must be >=45 and <=600')
+    if args.seconds is None:
+        args.seconds = (random.uniform(45, args.max_seconds if args.max_seconds is not None else 60)
+                        if args.action == 'play' else 60)
+    if not 1 <= args.limit <= 10 or not 0 < args.seconds <= 600:
+        parser.error('limit must be 1..10; seconds must be >0 and <=600')
+    try:
+        validate_did(args.did)
+    except ValueError as error:
+        parser.error(str(error))
+    if args.action == 'play':
+        if not args.video_id:
+            parser.error('play requires --video-id')
+        window_id = 'window-' + uuid.uuid4().hex
+        directory = args.run_dir or ROOT / 'results' / window_id
+        try:
+            result = play_window(args.video_id, window_id, args.buvid, directory, args.seconds, did=args.did)
+        except (ValueError, FileExistsError) as error:
+            parser.error(str(error))
+        if result['status'] != 'completed':
+            raise SystemExit(result.get('failure_reason') or '播放失败；请检查本轮输出目录')
+        return
+    if args.video_id or args.buvid is not None:
+        parser.error('--video-id and --buvid apply only to play')
+    if args.did is not None and args.action != 'run':
+        parser.error('--did applies only to play or run')
+    directory = (args.run_dir or ROOT / 'results/experiment-01').resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    state_path = directory / 'state.json'
+    if args.action == 'run':
+        run_lock = (directory / 'playback.lock').open('a+', encoding='utf-8')
+        try:
+            lock_experiment(run_lock)
+        except BlockingIOError:
+            raise SystemExit('Another playback process owns this experiment')
+        if state_path.exists():
+            state = read(state_path)
+            if state['seconds'] != args.seconds:
+                parser.error('Cannot change duration in an existing experiment')
+        else:
+            videos = read(ROOT / 'evidence/candidates.json')['videos']
+            if len(videos) != 10 or len({v['bvid'] for v in videos}) != 10:
+                raise RuntimeError('Expected exactly 10 distinct candidates')
+            baseline = observe(directory, 'baseline')
+            selected = {v['bvid'] for v in videos}
+            controls = sorted((v for v in baseline['archives'] if v['bvid'] not in selected and v['aid'] != 328686358),
+                              key=lambda v: (v['stat']['view'], v['bvid']))[:5]
+            state = {'created_at': now(), 'ftime': int(time.time()), 'seconds': args.seconds,
+                     'videos': videos, 'controls': controls, 'attempts': {}}
+            save(state_path, state)
+        if args.did is not None:
+            state['did'] = args.did
+            state['initial_did'] = state['did']
+            state['initial_did_source'] = 'explicit'
+            save(state_path, state)
+        client = TVClient(ROOT / '.private' / directory.name, directory / 'events.jsonl')
+        count = 0
+        for video in state['videos']:
+            if video['bvid'] in state['attempts']:
+                continue
+            item = play_one(client, video, state, directory, args.seconds)
+            count += 1
+            observe(directory, f'observation-{time.time_ns()}')
+            make_report(directory)
+            if item['status'] != 'completed':
+                raise SystemExit('Stopped after failed attempt; inspect private error before continuing')
+            if count >= args.limit:
+                break
+    elif args.action == 'observe':
+        observe(directory, f'observation-{time.time_ns()}')
+    rows = make_report(directory)
+    for row in rows:
+        print(f'{row["group"]} {row["bvid"]} {row["before"]} -> {row["after"]} delta={row["delta"]} {row["playback"]}')
+
+
+if __name__ == '__main__':
+    main()
