@@ -1,0 +1,16 @@
+{
+  "profile_id": "offline-android9",
+  "scene": {
+    "teenager_mode": "0",
+    "child_lock": "0"
+  },
+  "report": {
+    "auto_play": "0",
+    "spmid": "offline.fixture.player",
+    "from_spmid": "offline.fixture.home"
+  },
+  "extra": {
+    "internal_track_id": "offline-fixture-track",
+    "is_continuous_play": "0"
+  }
+}

@@ -12,6 +12,7 @@ import time
 from playback_runtime import terminate_tree
 from playback_duration import duration_range
 from dispatch_limits import DispatchLimits, validate_limits
+from offline_options import PRESET, validate_offline_options
 
 ROOT = Path(__file__).resolve().parent
 EMIT_LOCK = threading.Lock()
@@ -93,6 +94,10 @@ def run_lane(args, relay, lane, publish, wait):
         command.extend(['--device-profile', getattr(args, 'device_profile', 'original-tv')])
         command.extend(['--client-slot', f'lane-{lane:02d}'])
         command.extend(['--heartbeat-interval', str(getattr(args, 'heartbeat_interval', 0))])
+        if getattr(args, 'context_preset', 'none') == 'fixture':
+            command.extend(['--context-file', str(PRESET)])
+        if getattr(args, 'tv_lifecycle', False):
+            command.append('--tv-lifecycle')
         if getattr(args, 'device_confirmed', False):
             command.append('--device-confirmed')
         if args.new_ip:
@@ -192,6 +197,9 @@ def run_lane(args, relay, lane, publish, wait):
 
 def run_batch(args, relay, publish=emit, wait=time.sleep):
     concurrency = getattr(args, 'concurrency', 1)
+    validate_offline_options(args.mode, getattr(args, 'device_profile', 'original-tv'),
+        getattr(args, 'context_preset', 'none'), getattr(args, 'tv_lifecycle', False),
+        args.repeat, concurrency, getattr(args, 'trace', False), relay.paused)
     relay.debug_controls = bool(getattr(args, 'trace', False) and not args.new_ip and concurrency == 1)
     relay.publish = publish
     relay.limits = DispatchLimits(relay, getattr(args, 'ip_limit', 0), getattr(args, 'failure_limit', 0))
@@ -226,6 +234,8 @@ def main():
     parser.add_argument('--round-timeout', type=float)
     parser.add_argument('--device-profile', default='original-tv')
     parser.add_argument('--device-confirmed', action='store_true')
+    parser.add_argument('--context-preset', choices=('none', 'fixture'), default='none')
+    parser.add_argument('--tv-lifecycle', action='store_true')
     args = parser.parse_args()
     try:
         validate_limits(args.ip_limit, args.failure_limit)
@@ -235,6 +245,8 @@ def main():
     from device_profiles import validate_selection
     try:
         validate_selection(args.mode, args.device_profile, args.device_confirmed)
+        validate_offline_options(args.mode, args.device_profile, args.context_preset, args.tv_lifecycle,
+                                 args.repeat, args.concurrency, args.trace, args.paused)
     except ValueError as error:
         parser.error(str(error))
     if not 1 <= args.repeat <= 1000:

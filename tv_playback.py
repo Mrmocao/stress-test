@@ -13,6 +13,7 @@ import random
 import re
 import subprocess
 import ssl
+import sys
 import threading
 import time
 import urllib.error
@@ -29,6 +30,9 @@ from playback_runtime import ffmpeg_executable, lock_experiment
 from execution_budget import BudgetExceeded
 from device_profiles import baseline_profile
 from playback_heartbeat import HeartbeatSchedule, heartbeat_interval
+from playback_context import PlaybackContext
+from playback_lifecycle import PlaybackLifecycle, ONLINE_PATH
+from public_state import public_copy
 
 ROOT = Path(__file__).resolve().parent
 DEVICE_PROFILE = baseline_profile()
@@ -45,6 +49,9 @@ RUN_BUDGET = None
 READ_ATTEMPTS = 2
 READ_RETRY_DELAY = 5
 HEARTBEAT_INTERVAL = 0
+PLAYBACK_CONTEXT = PlaybackContext()
+TV_LIFECYCLE = False
+DEMO_INSTALLED = False
 
 
 def playback_progress(**progress):
@@ -158,6 +165,10 @@ def now():
 
 def save(path, data):
     path = Path(path)
+    if path.name == 'state.json':
+        # Raw state needed for identity continuity belongs only in .private.
+        save(private_state_path(path), data)
+        data = public_copy(data)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + '.tmp')
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
@@ -175,6 +186,16 @@ def save(path, data):
 
 def read(path):
     return json.loads(Path(path).read_text(encoding='utf-8'))
+
+
+def private_state_path(path):
+    key = hashlib.sha256(str(Path(path).resolve()).encode()).hexdigest()
+    return ROOT / '.private' / 'state' / (key + '.json')
+
+
+def read_runtime_state(path):
+    private = private_state_path(path)
+    return read(private if private.exists() else path)
 
 
 def open_network(request, timeout=25):
@@ -266,13 +287,16 @@ def click_payload(params):
 
 
 class TVClient:
-    def __init__(self, private_dir, event_file, *, buvid=None):
+    def __init__(self, private_dir, event_file, *, buvid=None, context=None):
+        self.context = PLAYBACK_CONTEXT if context is None else context
+        self.context.validate_profile(DEVICE_PROFILE)
         self.private_dir = private_dir
         private_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(private_dir, 0o700)
         self.event_file = event_file
         self.counter = len(list(private_dir.glob('request-*.json')))
-        self.common = dict(DEVICE_PROFILE['common'])
+        self.common = {**DEVICE_PROFILE['common'], **self.context.common()}
+        self.user_agent = UA
         self.appkey = APP_KEY
         self.request_session = uuid.uuid4().hex
         # Playback entry points supply the persisted test-client Buvid.
@@ -283,16 +307,17 @@ class TVClient:
         return sign_query(params)
 
     def request(self, path, params, kind='GET'):
-        # Only read queries can be replayed. Reports retain one transport attempt.
+        self.context.validate_runtime(CLIENT_STATE_MODE)
+        # online is a state update despite its GET method. Never replay it.
         return read_attempts(lambda attempt, maximum: self._request_once(path, params, kind, attempt, maximum),
-                             attempts=READ_ATTEMPTS if kind == 'GET' else 1)
+                             attempts=READ_ATTEMPTS if kind == 'GET' and path != ONLINE_PATH else 1)
 
     def _request_once(self, path, params, kind, attempt, max_attempts):
         self.counter += 1
         index = self.counter
         payload = None
         url = API_ROOT + path
-        headers = {'User-Agent': UA, 'Accept-Encoding': 'gzip',
+        headers = {'User-Agent': self.user_agent, 'Accept-Encoding': 'gzip',
                    'App-Key': 'android_tv_yst', 'env': 'prod', 'session-id': self.request_session}
         if self.buvid:
             headers['Buvid'] = self.buvid
@@ -336,18 +361,18 @@ class TVClient:
                 result = json.loads(raw)
             except ValueError:
                 result = {}
-            event.update(http_status=status, code=result.get('code'), message=result.get('message'))
+            event.update(http_status=status, code=result.get('code') if type(result.get('code')) is int else None)
             data = result.get('data')
             replacement_did = data.get('rpdid') if isinstance(data, dict) else None
             # TV PlayerStat consumes a nonempty rpdid even from a nonzero API
             # response. Limit this compatibility branch to the observed 14013.
             identity_update = (status == 200 and kind == 'CLICK'
                                and path == '/x/report/click/android/tv'
-                               and result.get('code') in (0, 14013)
+                               and type(result.get('code')) is int and result.get('code') in (0, 14013)
                                and isinstance(replacement_did, str) and bool(replacement_did.strip()))
             if identity_update:
                 event['identity_update'] = True
-            if status != 200 or (result.get('code') != 0 and not identity_update):
+            if status != 200 or ((type(result.get('code')) is not int or result.get('code') != 0) and not identity_update):
                 raise RuntimeError(f'{path}: HTTP {status}, API {result.get("code")}, {result.get("message")}')
             return result
         except Exception as error:
@@ -358,12 +383,9 @@ class TVClient:
                 file.write(json.dumps(event, ensure_ascii=False) + '\n')
 
 
-def extra_string(session):
-    # PlayerReportUtil uses single-quoted pairs, not JSON.
-    values = {'session_id': session, 'resource_id': '', 'internal_track_id': '', 'section_id': '',
-              'guest_id': '', 'resource_from': '', 'is_preview': '0', 'watch_right': '',
-              'section_type': '', 'ott_track_id': '', 'session_more': '', 'teenager_mode': '0'}
-    return '{' + ','.join(f"'{k}':'{v}'" for k, v in values.items()) + '}'
+def extra_string(session, *, context=None, common=None, endpoint='heartbeat'):
+    return (context or PlaybackContext()).extra(
+        session, DEVICE_PROFILE['common'] if common is None else common, endpoint)
 
 
 def report_click(client, params, run_state, run_dir, item):
@@ -383,7 +405,7 @@ def report_click(client, params, run_state, run_dir, item):
         if run_state.get('client_state_namespace'):
             ClientState(ROOT / '.private' / 'client-state', run_state['client_state_namespace']).update_did(replacement)
         save(run_dir / 'state.json', run_state)
-    if code == 0:
+    if type(code) is int and code == 0:
         item['play_click_accepted'] = True
         return response
     raise PlaybackFailure(f'Playback click was not accepted: code={code}; identity saved for next session; no replay')
@@ -392,7 +414,16 @@ def report_click(client, params, run_state, run_dir, item):
 def play_one(client, video, run_state, run_dir, target_seconds):
     bvid = video['bvid']
     item = {'bvid': bvid, 'started_at': now(), 'status': 'attempted',
-            'session': hashlib.sha1(uuid.uuid4().bytes).hexdigest()}
+            'session': hashlib.sha1(uuid.uuid4().bytes).hexdigest(),
+            'tv_lifecycle_enabled': TV_LIFECYCLE, 'lifecycle_events': [],
+            'lifecycle_status': 'not_started' if TV_LIFECYCLE else 'disabled'}
+    context = getattr(client, 'context', None)
+    if not isinstance(context, PlaybackContext):
+        context = PlaybackContext()
+    common = getattr(client, 'common', None)
+    if not isinstance(common, dict):
+        common = dict(DEVICE_PROFILE['common'])
+    item['context'] = context.summary()
     label = f'{run_state["window_id"]} {bvid}' if 'window_id' in run_state else bvid
     if 'window_id' in run_state:
         item['window_id'] = run_state['window_id']
@@ -407,7 +438,8 @@ def play_one(client, video, run_state, run_dir, target_seconds):
             raise RuntimeError('Video identity/state mismatch')
         aid, cid = view['aid'], view['cid']
         item.update(aid=aid, cid=cid, before_view=view['stat']['view'])
-        result = client.request('/x/tv/playurl', {'object_id': aid, 'cid': cid, 'playurl_type': 1,
+        result = client.request('/x/tv/playurl', {**context.fields('playurl'),
+                                'object_id': aid, 'cid': cid, 'playurl_type': 1,
                                 'qn': 80, 'fnver': 0, 'fnval': 131088, 'device_name': 'android',
                                 'source_type': 1, 'force_host': 0, 'fourk': 1})['data']
         media = select_media(result)
@@ -431,7 +463,15 @@ def play_one(client, video, run_state, run_dir, target_seconds):
         start_ts = int(time.time())
         events = []
         request_session = getattr(client, 'request_session', '')
-        extra = extra_string(request_session if isinstance(request_session, str) else '')
+        request_session = request_session if isinstance(request_session, str) else ''
+        extra = extra_string(request_session, context=context, common=common)
+        click_extra = extra_string(request_session, context=context, common=common, endpoint='click')
+        def checkpoint_lifecycle():
+            item['lifecycle_status'] = lifecycle.status
+            save(run_dir / 'state.json', run_state)
+
+        lifecycle = PlaybackLifecycle(client, context, aid, cid, item['lifecycle_events'],
+                                      enabled=TV_LIFECYCLE, checkpoint=checkpoint_lifecycle, budget=RUN_BUDGET)
         identity = {'aid': str(aid), 'cid': str(cid), 'mid': '0', 'sid': '0', 'epid': '0',
                     'type': '3', 'sub_type': '0', 'play_mode': '1', 'session': item['session'],
                     'playlist_type': '', 'playlist_id': '', 'device': 'master', 'auto_play': '0'}
@@ -440,8 +480,8 @@ def play_one(client, video, run_state, run_dir, target_seconds):
             # This decoder never pauses/seeks. Startup/buffering is not pause
             # time; played is a conservative decoded-time estimate, position
             # comes from media timestamps. This is not the TV lifecycle model.
-            return {**{k: v for k, v in identity.items() if k != 'sid'},
-                    'start_ts': start_ts, 'quality': result['quality'],
+            return {**{k: v for k, v in identity.items() if k != 'sid'}, **context.fields('heartbeat'),
+                    'start_ts': start_ts, 'quality': result['quality'], 'fourk': 1,
                     'total_time': elapsed, 'paused_time': 0,
                     'played_time': played, 'video_duration': math.floor(duration), 'play_type': '1',
                     'network_type': '1', 'last_play_progress_time': math.floor(min(decoded, duration)) if played else 0,
@@ -497,6 +537,7 @@ def play_one(client, video, run_state, run_dir, target_seconds):
                         first_frame = True
                         item['first_frame_epoch'] = time.time()
                         start_ts = int(time.time() - decoded)
+                        lifecycle.start(time.monotonic(), position=decoded)
                         item['failure_stage'] = 'start_heartbeat'
                         send_heartbeat('start', 0, 0)
                         events.append('start_heartbeat')
@@ -508,12 +549,12 @@ def play_one(client, video, run_state, run_dir, target_seconds):
                             run_state['ftime'] = ClientState(ROOT / '.private' / 'client-state', run_state['client_state_namespace']).first_time(server_time)
                         elif run_state.get('ftime') is None:
                             run_state['ftime'] = server_time
-                        click = {**identity, 'appkey': client.appkey,
-                                 **{k: DEVICE_PROFILE['common'][k] for k in ('platform', 'mobi_app', 'build')},
+                        click = {**identity, **context.fields('click'), 'appkey': client.appkey,
+                                 **{k: common[k] for k in ('platform', 'mobi_app', 'build', 'statistics')},
                                  'part': str(next((p['page'] for p in view.get('pages', []) if p.get('cid') == cid), -1)), 'lv': '0',
                                  'ftime': str(run_state['ftime']), 'stime': str(server_time),
                                  'ogv_copyright_index': '',
-                                 'extra': urllib.parse.quote_plus(extra, safe='*').replace('~', '%7E')}
+                                 'extra': urllib.parse.quote_plus(click_extra, safe='*').replace('~', '%7E')}
                         if run_state.get('did'):
                             click['did'] = run_state['did']
                             item['sent_did'] = run_state['did']
@@ -523,6 +564,9 @@ def play_one(client, video, run_state, run_dir, target_seconds):
                         item.pop('failure_stage', None)
                         print(f'{label}: first decoded frame; start reports accepted; no click replay', flush=True)
                     clock_now = time.monotonic()
+                    if 'play_click' in events:
+                        lifecycle.tick(clock_now, position=decoded, ended=block.get('progress') == 'end'
+                                       or proc.poll() is not None or decoded >= target - .75)
                     played = cadence.take(decoded, clock_now - start_clock, clock_now, target,
                                           ended=block.get('progress') == 'end' or proc.poll() is not None)
                     if played is not None and 'play_click' in events:
@@ -566,16 +610,28 @@ def play_one(client, video, run_state, run_dir, target_seconds):
                     primary_error = PlaybackFailure(reason)
                 if 'start_heartbeat' in events:
                     if RUN_BUDGET:
-                        RUN_BUDGET.begin_finishing()
+                        RUN_BUDGET.begin_finishing('heartbeat')
                     played = math.floor(min(decoded, elapsed))
                     try:
+                        if RUN_BUDGET:
+                            RUN_BUDGET.timeout(8)
                         send_heartbeat('end', played, math.floor(elapsed))
                         events.append('end_heartbeat')
                     except Exception as error:
                         cleanup_error = error
                         item['cleanup_error'] = playback_failure_message(error)
+                        item['end_heartbeat_status'] = 'skipped' if isinstance(error, BudgetExceeded) else 'unconfirmed'
+                        if isinstance(error, BudgetExceeded):
+                            item['end_heartbeat_skip_reason'] = 'insufficient_budget'
+                if lifecycle.started:
+                    if RUN_BUDGET:
+                        RUN_BUDGET.begin_finishing('history')
+                    item['termination_reason'] = 'completed' if media_complete and primary_error is None else 'abnormal'
+                    lifecycle.finish(min(decoded, elapsed, target), min(decoded, duration), reason=item['termination_reason'])
+                item['lifecycle_status'] = lifecycle.status
+                lifecycle_failed = TV_LIFECYCLE and lifecycle.status != 'completed'
                 periodic_failed = any(h['status'] != 'accepted' for h in item['periodic_heartbeats'])
-                item['report_status'] = 'completed' if not periodic_failed and all(e in events for e in ('start_heartbeat', 'play_click', 'end_heartbeat')) else 'unconfirmed'
+                item['report_status'] = 'completed' if not periodic_failed and not lifecycle_failed and all(e in events for e in ('start_heartbeat', 'play_click', 'end_heartbeat')) else 'unconfirmed'
         if primary_error is not None:
             raise primary_error
         if cleanup_error is not None:
@@ -584,6 +640,9 @@ def play_one(client, video, run_state, run_dir, target_seconds):
         if periodic_failed:
             item['failure_stage'] = 'periodic_heartbeat'
             raise PlaybackFailure('周期心跳存在未确认请求；未自动重发，详见心跳日志')
+        if lifecycle_failed:
+            item['failure_stage'] = 'tv_lifecycle'
+            raise PlaybackFailure('online/history 存在未确认请求；未自动重发，详见生命周期日志')
         item['status'] = 'completed'
     except Exception as error:
         item['status'] = 'failed'
@@ -632,6 +691,7 @@ def play_window(video_id, window_id, buvid, run_dir, seconds=60, *, did=None, st
         run_dir.mkdir(parents=True, exist_ok=False)
         namespace = f'{CLIENT_STATE_MODE}:{DEVICE_PROFILE["id"]}:{CLIENT_STATE_SLOT}:{buvid or "default"}'
         identity = ClientState(ROOT / '.private' / 'client-state', namespace).load(buvid)
+        PLAYBACK_CONTEXT.bind_runtime(DEVICE_PROFILE, identity, CLIENT_STATE_SLOT, CLIENT_STATE_MODE)
         did_source = 'explicit' if did is not None else ('server-persisted' if identity['did'] else 'absent')
         buvid = identity['buvid']
         if did is None:
@@ -695,29 +755,60 @@ def make_report(run_dir):
 
 
 def main():
-    global HEARTBEAT_INTERVAL
+    global HEARTBEAT_INTERVAL, PLAYBACK_CONTEXT, TV_LIFECYCLE, CLIENT_STATE_MODE, DEVICE_PROFILE, UA
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', nargs='?', default='play', metavar='VIDEO_ID|ACTION',
                         help='Video ID for one playback, or run/observe/report/play')
     parser.add_argument('--run-dir', type=Path)
+    parser.add_argument('--mode', choices=('demo', 'live'), help='Required for network/media actions; report stays local')
+    parser.add_argument('--device-profile', default=None)
+    parser.add_argument('--device-confirmed', action='store_true')
+    parser.add_argument('--profile-seed', help='Reproducible 32-hex seed for demo dynamic profiles')
     parser.add_argument('--video-id', help='BVID, av ID or numeric AID for one playback window')
     parser.add_argument('--buvid', help='Explicit client identity; omitted reuses persisted test-client Buvid')
     parser.add_argument('--did', help='Explicit report did; otherwise reuse server rpdid or omit on first session')
     parser.add_argument('--limit', type=int, default=10, help='Maximum new attempts this invocation')
     parser.add_argument('--heartbeat-interval', type=int, choices=(0, 15), default=0,
                         help='Experimental real-playback heartbeat: 0=off, 15=seconds')
+    parser.add_argument('--context-file', type=Path,
+                        help='Private JSON with explicit device/scene/guest context bound to profile_id')
+    parser.add_argument('--tv-lifecycle', action='store_true',
+                        help='Opt in to online presence and final UGC history; no replay after failure')
     duration = parser.add_mutually_exclusive_group()
     duration.add_argument('--seconds', type=float, help='Fixed playback duration in seconds')
     duration.add_argument('--max-seconds', type=float,
                           help='Random playback upper bound for play (45..600, default: 60)')
     args = parser.parse_args()
+    if args.action != 'report' and args.mode is None:
+        parser.error('必须显式指定 --mode demo 或 --mode live；离线示例使用 demo')
+    if args.mode:
+        CLIENT_STATE_MODE = args.mode
+        from device_profiles import resolve_profile
+        try:
+            # The worker has already selected one complete profile for this round.
+            if args.device_profile is not None or args.profile_seed is not None or DEVICE_PROFILE.get('mode') != args.mode:
+                DEVICE_PROFILE = resolve_profile(args.mode, args.device_profile or 'original-tv',
+                                                 args.device_confirmed, seed=args.profile_seed)
+                UA = DEVICE_PROFILE['user_agent']
+        except ValueError as error:
+            parser.error(str(error))
     HEARTBEAT_INTERVAL = heartbeat_interval(args.heartbeat_interval)
+    try:
+        PLAYBACK_CONTEXT = PlaybackContext.from_file(args.context_file) if args.context_file else PlaybackContext()
+        PLAYBACK_CONTEXT.validate_profile(DEVICE_PROFILE)
+    except ValueError as error:
+        parser.error(str(error))
+    TV_LIFECYCLE = args.tv_lifecycle
     if args.action not in ('run', 'observe', 'report', 'play'):
         if not re.fullmatch(r'(?:BV[0-9A-Za-z]{10}|(?:av)?[1-9][0-9]*)', args.action):
             parser.error('expected a BVID, av ID, numeric AID or run/observe/report/play')
         if args.video_id is not None:
             parser.error('specify the video ID either positionally or with --video-id')
         args.video_id, args.action = args.action, 'play'
+    if args.action != 'play' and (args.context_file or args.tv_lifecycle):
+        parser.error('--context-file and --tv-lifecycle apply only to one play invocation')
+    if args.mode == 'demo' and args.action not in ('play', 'report'):
+        parser.error('demo 仅支持单次play或本地report；不运行旧系列联网入口')
     if args.max_seconds is not None:
         if args.action != 'play':
             parser.error('--max-seconds applies only to play')
@@ -737,6 +828,12 @@ def main():
             parser.error('play requires --video-id')
         window_id = 'window-' + uuid.uuid4().hex
         directory = args.run_dir or ROOT / 'results' / window_id
+        if args.mode == 'demo' and not DEMO_INSTALLED:
+            from debug_worker import install_demo
+            fixture_dir = ROOT / '.private' / 'demo-fixtures' / window_id
+            fixture_dir.mkdir(parents=True, exist_ok=False)
+            install_demo(sys.modules[__name__], fixture_dir, args.seconds)
+            args.video_id = 'BV0000000000'
         try:
             result = play_window(args.video_id, window_id, args.buvid, directory, args.seconds, did=args.did)
         except (ValueError, FileExistsError) as error:
@@ -758,7 +855,7 @@ def main():
         except BlockingIOError:
             raise SystemExit('Another playback process owns this experiment')
         if state_path.exists():
-            state = read(state_path)
+            state = read_runtime_state(state_path)
             if state['seconds'] != args.seconds:
                 parser.error('Cannot change duration in an existing experiment')
         else:

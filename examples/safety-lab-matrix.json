@@ -1,0 +1,48 @@
+{
+  "emulator": "/opt/android-sdk/emulator/emulator",
+  "adb": "/opt/android-sdk/platform-tools/adb",
+  "package": "replace.with.actual.package",
+  "test_package": "replace.with.actual.package.test",
+  "test_runner": "androidx.test.runner.AndroidJUnitRunner",
+  "scenarios": ["normal", "slow", "unavailable", "disconnect", "timeout"],
+  "slow_seconds": 2,
+  "round_timeout": 600,
+  "python_demo_seconds": 0,
+  "routes": {
+    "/fixture": {"status": 200, "json": {"ok": true}}
+  },
+  "targets": [
+    {
+      "name": "android9-tv189",
+      "avd_template": "/opt/tv-lab/android9.avd",
+      "system_image": "/opt/android-sdk/system-images/android-28/android-tv/x86",
+      "apk": "/opt/tv-lab/1.8.9/application.apk",
+      "test_apk": "/opt/tv-lab/1.8.9/application-test.apk",
+      "expected": {
+        "android_release": "9",
+        "android_sdk": "28",
+        "android_fingerprint": "REPLACE_WITH_VERIFIED_ANDROID9_FINGERPRINT",
+        "version_name": "1.8.9",
+        "version_code": "108900",
+        "apk_sha256": "REPLACE_WITH_ACTUAL_189_APK_SHA256",
+        "test_apk_sha256": "REPLACE_WITH_ACTUAL_189_TEST_APK_SHA256"
+      }
+    },
+    {
+      "name": "android11-tv188",
+      "avd_template": "/opt/tv-lab/android11.avd",
+      "system_image": "/opt/android-sdk/system-images/android-30/android-tv/x86",
+      "apk": "/opt/tv-lab/1.8.8/application.apk",
+      "test_apk": "/opt/tv-lab/1.8.8/application-test.apk",
+      "expected": {
+        "android_release": "11",
+        "android_sdk": "30",
+        "android_fingerprint": "REPLACE_WITH_VERIFIED_ANDROID11_FINGERPRINT",
+        "version_name": "1.8.8",
+        "version_code": "REPLACE_WITH_ACTUAL_188_VERSION_CODE",
+        "apk_sha256": "REPLACE_WITH_ACTUAL_188_APK_SHA256",
+        "test_apk_sha256": "REPLACE_WITH_ACTUAL_188_TEST_APK_SHA256"
+      }
+    }
+  ]
+}

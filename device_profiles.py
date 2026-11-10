@@ -21,7 +21,7 @@ ANDROID_SYSTEMS = (
 def _profile(key, label, model, android, sdk, os_build, *, synthetic, version='1.8.9', brand=None):
     build = SIMULATED_VERSIONS[version]
     return {
-        'id': key, 'label': label, 'offline_only': False, 'synthetic': synthetic,
+        'id': key, 'label': label, 'offline_only': synthetic, 'synthetic': synthetic,
         'provenance': 'generated compatibility-test parameters' if synthetic else 'existing code; actual device not verified',
         'app_version': version, 'android_version': android, 'os_build': os_build,
         'version_provenance': 'synthetic; not verified against APK' if synthetic else 'existing code',
@@ -107,11 +107,13 @@ def validate_selection(mode, selection, confirmed=False):
         raise ValueError('请选择有效的设备配置方案')
     if mode == 'live' and selection == BASELINE:
         if confirmed is not True:
-            raise ValueError('请核对配置，并确认它与实际客户端一致；不一致时请使用离线演示')
+            raise ValueError('请核对配置，并确认它与实际客户端一致；未核对时请选择其他设备方案')
 
 
-def resolve_profile(mode, selection, confirmed=False):
+def resolve_profile(mode, selection, confirmed=False, *, seed=None):
     validate_selection(mode, selection, confirmed)
-    profile = generate_profile() if selection in (RANDOM, LEGACY_RANDOM) else deepcopy(_PROFILES[selection])
+    if seed is not None and (mode != 'demo' or selection not in (RANDOM, LEGACY_RANDOM)):
+        raise ValueError('固定种子仅用于 demo 动态合成配置')
+    profile = generate_profile(seed) if selection in (RANDOM, LEGACY_RANDOM) else deepcopy(_PROFILES[selection])
     return {**profile, 'selection': selection, 'mode': mode,
             'actual_client_confirmed': mode == 'live' and selection == BASELINE and confirmed is True}

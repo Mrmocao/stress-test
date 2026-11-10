@@ -108,6 +108,18 @@ class ReadRetryTests(unittest.TestCase):
         self.assertEqual(len(self.hits), 1)
         self.wait.assert_not_called()
 
+    def test_online_get_is_a_state_update_and_never_replayed(self):
+        self.replies = [(503, False, 0)]
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            client = tv.TVClient(root / 'private', root / 'events.jsonl', buvid='fixture')
+            with self.assertRaises(tv.RequestFailure):
+                client.request('/x/tv/playurl/online', {'aid': 1, 'cid': 2})
+            events = [json.loads(line) for line in (root / 'events.jsonl').read_text().splitlines()]
+            self.assertEqual(events[0]['max_attempts'], 1)
+        self.assertEqual(len(self.hits), 1)
+        self.wait.assert_not_called()
+
     def test_permission_and_business_errors_do_not_retry(self):
         for status, code in ((403, 0), (200, -412)):
             with self.subTest(status=status):

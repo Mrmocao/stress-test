@@ -34,15 +34,17 @@ class DeviceProfileTests(unittest.TestCase):
             for mode in ('demo', 'live'):
                 selected = profiles.resolve_profile(mode, key)
                 self.assertFalse(selected['actual_client_confirmed'])
-                self.assertFalse(selected['offline_only'])
+                self.assertTrue(selected['offline_only'])
             common = selected['common']
             self.assertIn(common['model'], selected['user_agent'])
             self.assertIn('build/' + common['build'], selected['user_agent'])
             self.assertIn('BiliTV/' + selected['app_version'], selected['user_agent'])
             self.assertEqual(common['sys_ver'], {'8.1':'27', '9':'28', '10':'29', '11':'30', '12':'31', '13':'33'}[selected['android_version']])
             self.assertEqual(common['build'], profiles.SIMULATED_VERSIONS[selected['app_version']])
-            self.assertEqual(profiles.resolve_profile('live', key)['id'], key)
-            self.assertFalse(profiles.resolve_profile('live', key, True)['actual_client_confirmed'])
+            for confirmed in (False, True):
+                selected_live = profiles.resolve_profile('live', key, confirmed)
+                self.assertEqual(selected_live['id'], key)
+                self.assertFalse(selected_live['actual_client_confirmed'])
             selected['common']['model'] = 'mutated'
             self.assertNotEqual(profiles.resolve_profile('demo', key)['common']['model'], 'mutated')
 
@@ -135,7 +137,9 @@ class DeviceProfileTests(unittest.TestCase):
                 with patch.object(profiles.secrets, 'token_hex', return_value='e' * 32):
                     selected = profiles.resolve_profile(mode, key)
                 self.assertEqual(state['device_profile'], selected)
-                private = Path(state['private_dir'])
+                self.assertEqual(state['private_dir'], '<redacted>')
+                with patch.object(tv, 'ROOT', root):
+                    private = Path(tv.read_runtime_state(root / 'playback/state.json')['private_dir'])
                 requests = [json.loads(p.read_text(encoding='utf-8')) for p in private.glob('request-*.json')]
                 self.assertTrue(any(r['kind'] == 'CLICK' for r in requests))
                 for r in requests:

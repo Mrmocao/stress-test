@@ -4,10 +4,11 @@ import time
 SAFETY_SECONDS = 2
 STARTUP_SECONDS = 3
 FINISH_SECONDS = 5
+HISTORY_SECONDS = 5
 
 
-def minimum_lease_seconds(target):
-    return target + SAFETY_SECONDS + STARTUP_SECONDS + FINISH_SECONDS
+def minimum_lease_seconds(target, *, lifecycle=False):
+    return target + SAFETY_SECONDS + STARTUP_SECONDS + FINISH_SECONDS + (HISTORY_SECONDS if lifecycle else 0)
 
 
 class BudgetExceeded(RuntimeError):
@@ -15,11 +16,13 @@ class BudgetExceeded(RuntimeError):
 
 
 class ExecutionBudget:
-    def __init__(self, expires_at, target_seconds, *, clock=time.monotonic):
+    def __init__(self, expires_at, target_seconds, *, clock=time.monotonic, lifecycle=False):
         self.clock = clock
         self.deadline = expires_at - SAFETY_SECONDS
         self.target_seconds = target_seconds
-        self.finish_reserve = FINISH_SECONDS
+        self.history_reserve = HISTORY_SECONDS if lifecycle else 0
+        self.finish_reserve = FINISH_SECONDS + self.history_reserve
+        self.finish_phase = None
         self.startup_reserve = STARTUP_SECONDS
         self.preparing = True
         self.finishing = False
@@ -34,6 +37,10 @@ class ExecutionBudget:
 
     def timeout(self, maximum=5):
         available = self.request_remaining()
+        if self.finishing and self.finish_phase == 'heartbeat':
+            available = min(FINISH_SECONDS, max(0, available - self.history_reserve))
+        elif self.finishing and self.finish_phase == 'history':
+            available = min(HISTORY_SECONDS, available)
         if available < 0.1:
             raise BudgetExceeded('代理剩余寿命不足，无法完成本轮播放及收尾')
         return min(float(maximum), available)
@@ -51,6 +58,9 @@ class ExecutionBudget:
         if self.remaining() <= 0:
             raise BudgetExceeded('本轮代理时间预算已耗尽')
 
-    def begin_finishing(self):
+    def begin_finishing(self, phase=None):
+        if phase not in (None, 'heartbeat', 'history'):
+            raise ValueError('unknown finish phase')
         self.preparing = False
         self.finishing = True
+        self.finish_phase = phase

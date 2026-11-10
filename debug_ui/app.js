@@ -14,6 +14,18 @@ let efficiencyControlsSupported = false;
 let periodicHeartbeatSupported = false;
 let deviceProfiles = [], deviceProfilesReady = false, runActive = false;
 let deviceGenerationRules = null;
+let offlineContextSupported = false;
+
+function refreshOfflineOptions() {
+  const blocked = runActive || $('mode').value !== 'demo';
+  $('context-preset').disabled = blocked;
+  $('tv-lifecycle').disabled = blocked;
+  if ($('mode').value !== 'demo') {
+    $('context-preset').value = 'none';
+    $('tv-lifecycle').checked = false;
+  }
+  $('offline-note').textContent = blocked ? '离线协议选项仅在未运行的 demo 模式下可编辑。' : '选择样例会切换到 QuartzTV Android 9；仅允许单路单次。';
+}
 
 function renderDevicePreview() {
   const live = $('mode').value === 'live';
@@ -21,18 +33,19 @@ function renderDevicePreview() {
   $('device-preview').textContent = selected
     ? `${selected.label}\n${JSON.stringify({app_version:selected.app_version,android_version:selected.android_version,...selected.common,UserAgent:selected.user_agent},null,2)}`
     : JSON.stringify(deviceGenerationRules || {说明:'服务尚未提供生成规则，请刷新页面或更新本地服务'},null,2);
-  $('device-note').textContent = (selected ? '指定配置会重复使用，适合复现测试。' : '每轮动态生成新的合成型号与 Android/SDK 配对；固定 APK 1.8.9，本轮参数保持一致。') + (live?'真实播放将使用选中的参数请求实际接口；合成设备不代表已验证的真实客户端。':'离线演示使用本地响应。');
+  $('device-note').textContent = (selected ? '指定配置会重复使用，适合复现测试。' : '每轮动态生成新的合成型号与 Android/SDK 配对；固定 APK 1.8.9，本轮参数保持一致。') + (live?'真实播放沿用离线方案参数；合成方案仅表示接口兼容测试参数。':'离线演示使用本地响应。');
   const needsConfirmation = live && selected?.id === 'original-tv';
   $('device-confirmation').hidden = !needsConfirmation;
   $('device-confirmed').required = needsConfirmation;
 }
 function refreshDeviceOptions() {
   const previous = $('device-profile').value;
-  const live = $('mode').value === 'live';
+  // Both modes expose the same complete device plan so their parameters can
+  // be compared across offline and real transports.
   const options = deviceProfiles.map(profile => [profile.id, profile.label]);
-  options.unshift(['random-device', '动态生成测试设备（每轮新配置 · APK 1.8.9）']);
+  options.push(['random-device', '动态生成测试设备（每轮新配置）']);
   $('device-profile').replaceChildren(...options.map(([value, label]) => {const option = element('option', '', label); option.value = value; return option;}));
-  $('device-profile').value = options.some(([value]) => value === previous) ? previous : (live ? 'original-tv' : 'random-device');
+  $('device-profile').value = options.some(([value]) => value === previous) ? previous : 'random-device';
   $('device-confirmed').checked = false;
   renderDevicePreview();
 }
@@ -240,6 +253,7 @@ async function poll() {
     durationRangeSupported = data.duration_range_supported === true;
     efficiencyControlsSupported = data.efficiency_controls_supported === true;
     periodicHeartbeatSupported = data.periodic_heartbeat_supported === true;
+    offlineContextSupported = data.offline_context_supported === true;
     $('connection').textContent='本地服务已连接';$('connection').style.color='';
     if(data.run_dir!==lastRun){lastRun=data.run_dir;clearRun();if(data.run_dir){$('mode').value=data.mode;if(data.batch?.ip_limit!==undefined)$('ip-limit').value=data.batch.ip_limit;if(data.batch?.failure_limit!==undefined)$('failure-limit').value=data.batch.failure_limit;if(data.batch?.seconds_min!==undefined){$('seconds-min').value=data.batch.seconds_min;$('seconds-max').value=data.batch.seconds_max;}$('mode').dispatchEvent(new Event('change'));}}
     cursor=data.cursor;
@@ -318,6 +332,7 @@ async function poll() {
       ? `第 ${effectiveWorker.lane} 路 / 第 ${effectiveWorker.round} 轮\n${JSON.stringify({app_version:effectiveProfile.app_version,android_version:effectiveProfile.android_version,...effectiveProfile.common,UserAgent:effectiveProfile.user_agent,generation_seed:effectiveProfile.generation_seed},null,2)}`
       : '启动后显示实际参数。';
     $('device-profile').disabled=data.running || !deviceProfilesReady;
+    refreshOfflineOptions();
     $('device-confirmed').disabled=data.running;
     $('start').disabled=data.running || busy || !deviceProfilesReady;
     ['mode','video','seconds-min','seconds-max','repeat','concurrency','start-paused','periodic-heartbeat'].forEach(id=>$(id).disabled=data.running || (id==='video' && $('mode').value!=='live'));
@@ -340,7 +355,10 @@ $('launch').addEventListener('submit',async event=>{
     if(!durationRangeSupported)throw new Error('当前服务尚未启用时长区间，请在当前批次结束后重启观察服务并刷新页面。');
     if(!efficiencyControlsSupported)throw new Error('请在当前批次结束后重启观察服务，以启用消耗保护。');
     if($('periodic-heartbeat').checked&&!periodicHeartbeatSupported)throw new Error('当前服务尚未支持周期心跳，请在当前批次结束后重启观察服务并刷新页面。');
-    await api('/api/start',{mode:$('mode').value,device_profile:$('device-profile').value,device_confirmed:$('device-confirmed').checked,video:$('video').value,seconds_min:Number($('seconds-min').value),seconds_max:Number($('seconds-max').value),repeat:Number($('repeat').value),concurrency:Number($('concurrency').value),ip_retries:Number($('ip-retries').value),ip_limit:Number($('ip-limit').value),failure_limit:Number($('failure-limit').value),heartbeat_interval:$('periodic-heartbeat').checked?15:0,debug:$('debug-details').checked,paused:$('debug-details').checked&&$('start-paused').checked,new_ip:$('mode').value==='live'&&$('new-ip').checked});
+    const offlineOptions = $('context-preset').value !== 'none' || $('tv-lifecycle').checked;
+    if (offlineOptions && !offlineContextSupported) throw new Error('当前服务尚未支持离线协议验证，请重启观察服务并刷新。');
+    if (offlineOptions && ($('mode').value !== 'demo' || Number($('repeat').value)!==1 || Number($('concurrency').value)!==1 || $('debug-details').checked || $('start-paused').checked)) throw new Error('离线协议验证要求单路单次，并关闭详细调试和启动暂停。');
+    await api('/api/start',{context_preset:$('context-preset').value,tv_lifecycle:$('tv-lifecycle').checked,mode:$('mode').value,device_profile:$('device-profile').value,device_confirmed:$('device-confirmed').checked,video:$('video').value,seconds_min:Number($('seconds-min').value),seconds_max:Number($('seconds-max').value),repeat:Number($('repeat').value),concurrency:Number($('concurrency').value),ip_retries:Number($('ip-retries').value),ip_limit:Number($('ip-limit').value),failure_limit:Number($('failure-limit').value),heartbeat_interval:$('periodic-heartbeat').checked?15:0,debug:$('debug-details').checked,paused:$('debug-details').checked&&$('start-paused').checked,new_ip:$('mode').value==='live'&&$('new-ip').checked});
   }
   catch(error){showError(error);}finally{busy=false;$('start').disabled=runActive || !deviceProfilesReady;}
 });
@@ -351,7 +369,7 @@ $('launch').addEventListener('submit',async event=>{
 $('mode').addEventListener('change',()=>{
   const live=$('mode').value==='live';
   const total=Number($('concurrency').value)*Number($('repeat').value);
-  $('mode-note').textContent=`${$('concurrency').value} 路 × 每路 ${$('repeat').value} 轮 = ${total} 次。每轮在 ${$('seconds-min').value}～${$('seconds-max').value} 秒内独立随机，两端相同则固定。失败等待 5 秒后继续；暂停派发会让当前轮完成。${live?'':'离线模式不访问哔哩哔哩。'}`;
+  $('mode-note').textContent=`${$('concurrency').value} 路 × 每路 ${$('repeat').value} 轮 = ${total} 次。每轮在 ${$('seconds-min').value}～${$('seconds-max').value} 秒内独立随机，两端相同则固定。失败等待 5 秒后继续；暂停派发会让当前轮完成。${live?'':'离线演示不访问哔哩哔哩。'}`;
   $('video').disabled=!live;
   $('new-ip').disabled=!live || $('start').disabled;
   $('ip-retries').disabled=!live || $('start').disabled;
@@ -365,6 +383,8 @@ $('mode').dispatchEvent(new Event('change'));
 }));
 $('mode').addEventListener('change',()=>{if(deviceProfilesReady)refreshDeviceOptions();});
 $('device-profile').addEventListener('change',()=>{$('device-confirmed').checked=false;renderDevicePreview();});
+$('context-preset').addEventListener('change',()=>{if($('context-preset').value==='fixture'){$('device-profile').value='offline-android9';renderDevicePreview();}});
+$('mode').addEventListener('change',refreshOfflineOptions);
 api('/api/device-profiles').then(data=>{
   deviceProfiles=data.profiles;deviceGenerationRules=data.generation_rules;deviceProfilesReady=true;refreshDeviceOptions();
   $('device-profile').disabled=runActive;$('start').disabled=runActive || busy;

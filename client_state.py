@@ -41,9 +41,13 @@ class ClientState:
     def load(self, buvid=None):
         with self.locked():
             if self.path.exists():
-                return json.loads(self.path.read_text(encoding='utf-8'))
+                state = json.loads(self.path.read_text(encoding='utf-8'))
+                if 'installation_id' not in state:
+                    state['installation_id'] = uuid.uuid4().hex
+                    self.write(state)
+                return state
             state = {'buvid': buvid or generate_buvid('mac', generate_mac()),
-                     'did': '', 'ftime': None}
+                     'did': '', 'ftime': None, 'installation_id': uuid.uuid4().hex}
             self.write(state)
             return state
 

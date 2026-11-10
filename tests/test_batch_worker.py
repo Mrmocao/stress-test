@@ -242,7 +242,7 @@ class BatchTests(unittest.TestCase):
         calls = []
         def locked_then_replace(source, target):
             calls.append(target)
-            if len(calls) <= 2:
+            if target.name == 'state.json' and calls.count(target) <= 2:
                 raise PermissionError('temporary reader lock')
             return replace(source, target)
         with tempfile.TemporaryDirectory() as directory:
@@ -251,7 +251,7 @@ class BatchTests(unittest.TestCase):
             with patch.object(Path, 'replace', locked_then_replace), patch.object(tv.os, 'name', 'nt'), patch.object(tv.time, 'sleep'):
                 tv.save(target, {'status': 'completed'})
             self.assertEqual(json.loads(target.read_text())['status'], 'completed')
-            self.assertEqual(len(calls), 3)
+            self.assertEqual(calls.count(target), 3)
 
     def test_permanent_save_error_keeps_previous_state(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,0 +1,14 @@
+[
+  {"event": "start", "at": 0, "position": 0},
+  {"event": "progress", "at": 10, "position": 10},
+  {"event": "pause", "at": 10},
+  {"event": "resume", "at": 15},
+  {"event": "progress", "at": 20, "position": 15},
+  {"event": "seek", "at": 20, "position": 40},
+  {"event": "progress", "at": 25, "position": 45},
+  {"event": "buffer", "at": 25},
+  {"event": "resume", "at": 30},
+  {"event": "background", "at": 30},
+  {"event": "resume", "at": 35},
+  {"event": "end", "at": 40, "position": 50}
+]

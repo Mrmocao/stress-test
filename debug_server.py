@@ -19,6 +19,9 @@ from playback_duration import duration_range
 from playback_heartbeat import heartbeat_interval as validate_heartbeat_interval
 from dispatch_limits import validate_limits
 from device_profiles import BASELINE, catalog, generation_rules, validate_selection
+from public_state import public_copy
+from protocol_capabilities import CAPABILITIES
+from offline_options import validate_offline_options
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / 'debug_ui'
@@ -83,6 +86,7 @@ class Inspector:
         self.active_dir = Path(worker['run_dir']) if worker['run_dir'] else self.run_dir
 
     def record(self, event):
+        event = public_copy(event)
         with self.lock:
             kind = event['kind']
             lane = event.setdefault('lane', 0 if kind in ('launch', 'lifecycle', 'control', 'process_exit') else 1)
@@ -152,7 +156,7 @@ class Inspector:
                                       if key in event}
             if kind == 'network':
                 error = bool(event.get('error_type') or event.get('http_status') != 200
-                             or event.get('code') != 0 and not event.get('identity_update'))
+                             or event.get('code') != 0)
                 self.batch['requests'] += 1
                 self.batch['errors'] += int(error)
                 metrics = worker['metrics']
@@ -199,7 +203,7 @@ class Inspector:
 
     def start(self, mode, video, seconds, paused=False, new_ip=False, repeat=1, concurrency=1, ip_retries=0, debug=False,
               device_profile=BASELINE, device_confirmed=False, seconds_min=None, seconds_max=None,
-              ip_limit=0, failure_limit=5, heartbeat_interval=0):
+              ip_limit=0, failure_limit=5, heartbeat_interval=0, context_preset='none', tv_lifecycle=False):
         if mode not in ('demo', 'live'):
             raise ValueError('Unknown mode')
         seconds_min, seconds_max = duration_range(seconds, seconds_min, seconds_max)
@@ -214,6 +218,8 @@ class Inspector:
         if type(debug) is not bool:
             raise ValueError('debug 必须为布尔值')
         validate_selection(mode, device_profile, device_confirmed)
+        validate_offline_options(mode, device_profile, context_preset, tv_lifecycle,
+                                 repeat, concurrency, debug, paused)
         video = normalize_video(video) if mode == 'live' else 'BV0000000000'
         if not isinstance(new_ip, bool):
             raise ValueError('new_ip 必须为布尔值')
@@ -246,6 +252,7 @@ class Inspector:
             self.batch.update(seconds_min=seconds_min, seconds_max=seconds_max)
             self.batch.update(ip_limit=ip_limit, failure_limit=failure_limit)
             self.batch['heartbeat_interval'] = heartbeat_interval
+            self.batch.update(context_preset=context_preset, tv_lifecycle=tv_lifecycle)
             self.workers.clear()
             for lane in range(1, concurrency + 1):
                 self.worker(lane)
@@ -262,6 +269,9 @@ class Inspector:
             command.extend(['--ip-limit', str(ip_limit), '--failure-limit', str(failure_limit)])
             command.extend(['--device-profile', device_profile])
             command.extend(['--heartbeat-interval', str(heartbeat_interval)])
+            command.extend(['--context-preset', context_preset])
+            if tv_lifecycle:
+                command.append('--tv-lifecycle')
             if device_confirmed is True:
                 command.append('--device-confirmed')
             if paused:
@@ -362,7 +372,7 @@ class Inspector:
                     'latest_id': self.seq, 'events': events, 'current': self.current if detail else None,
                     'scopes': [{'scope': k, 'file': v['file'], 'function': v['function'],
                                 'line': v['line']} for k, v in self.scopes.items()] if detail else [],
-                    'metrics': self.metrics, 'state': state, 'proxy': self.proxy,
+                    'metrics': self.metrics, 'state': public_copy(state), 'proxy': self.proxy,
                     'batch': {**self.batch, 'rounds': [dict(row) for row in self.batch['rounds']]},
                     'workers': [{'lane': w['lane'], 'round': w['round'], 'status': w['status'],
                                  'proxy': dict(w['proxy']), 'metrics': dict(w['metrics']), 'reason': w['reason'],
@@ -371,7 +381,8 @@ class Inspector:
                     'trace_enabled': self.trace_enabled,
                     'dispatch_paused': self.dispatch_paused, 'trace_capped': self.trace_capped,
                     'logs_incremental': True, 'duration_range_supported': True, 'efficiency_controls_supported': True,
-                    'periodic_heartbeat_supported': True,
+                    'periodic_heartbeat_supported': True, 'offline_context_supported': True,
+                    'protocol_capabilities': CAPABILITIES,
                     'logs': [e for e in self.logs if after < e['id'] <= (events[-1]['id'] if events else max(after, self.seq))],
                     'history_truncated': bool(self.events and after and after < self.events[0]['id'] - 1)}
 
@@ -455,7 +466,9 @@ class Handler(BaseHTTPRequestHandler):
                                                        data.get('device_confirmed', False),
                                                        seconds_min=data.get('seconds_min'), seconds_max=data.get('seconds_max'),
                                                        ip_limit=data.get('ip_limit', 0), failure_limit=data.get('failure_limit', 5),
-                                                       heartbeat_interval=data.get('heartbeat_interval', 0))
+                                                       heartbeat_interval=data.get('heartbeat_interval', 0),
+                                                       context_preset=data.get('context_preset', 'none'),
+                                                       tv_lifecycle=data.get('tv_lifecycle', False))
                 return self.reply(200, {'run_dir': directory})
             if self.path == '/api/control':
                 self.server.inspector.control(data.get('command'))

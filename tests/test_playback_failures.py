@@ -47,7 +47,7 @@ class PlaybackFailureTests(unittest.TestCase):
                 self.assertNotIn('http://', result['failure_reason'])
                 self.assertEqual(client.request.call_count, 1)
                 self.assertEqual(client.request.call_args.args[0], '/x/tv/playurl')
-                with patch.object(sys, 'argv', ['tv_playback.py', 'BV0000000000']), patch.object(tv, 'play_window', return_value=result):
+                with patch.object(sys, 'argv', ['tv_playback.py', 'BV0000000000', '--mode', 'live', '--device-confirmed']), patch.object(tv, 'play_window', return_value=result):
                     with self.assertRaisesRegex(SystemExit, 'HTTP 503'):
                         tv.main()
         finally:

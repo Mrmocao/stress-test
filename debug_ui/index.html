@@ -12,7 +12,7 @@
 <main>
   <div class="heading"><div><h1>运行观察台 · dev</h1><p>TV 实测参数修正版 · 支持 DASH；默认仅开始、结束上报。</p></div><span class="runtime">DEV · LOCAL INSPECTOR</span></div>
   <form id="launch">
-    <label>运行模式<select id="mode"><option value="demo">离线演示 · 本地音视频</option><option value="live">真实播放 · 哔哩哔哩接口</option></select></label>
+    <label>运行模式<select id="mode"><option value="demo">离线演示</option><option value="live">真实播放</option></select></label>
     <label class="video-field">视频 BV / av 号或链接<input id="video" value="BV1Gq486CEK4" placeholder="BV1Gq486CEK4" autocomplete="off"></label>
     <label class="seconds-field">最短时长 / 秒<input id="seconds-min" type="number" min="0.1" max="600" step="0.1" value="45" required></label>
     <label class="seconds-field">最长时长 / 秒<input id="seconds-max" type="number" min="0.1" max="600" step="0.1" value="45" required></label>
@@ -29,6 +29,12 @@
     <label id="device-confirmation" class="device-confirmation" hidden><input id="device-confirmed" type="checkbox" form="launch">我已核对以上参数与实际客户端一致（原有配置未经程序核验）</label>
     <p id="device-effective" role="status">尚未启动；运行后显示实际选择。</p>
     <details><summary>查看当前路实际参数</summary><pre id="device-effective-preview" aria-label="当前路实际设备参数">启动后显示实际参数。</pre></details>
+  </section>
+  <section class="device-panel" aria-label="离线协议验证">
+    <label>离线上下文<select id="context-preset" form="launch"><option value="none">不使用上下文</option><option value="fixture">内置样例 · QuartzTV Android 9</option></select></label>
+    <label class="check"><input id="tv-lifecycle" type="checkbox" form="launch">验证 online 和 history 生命周期</label>
+    <p>仅支持离线单路单次，关闭详细调试和启动暂停。样例不含游客凭据；暂停派发不代表播放器暂停。</p>
+    <p id="offline-note" role="status">可先选择内置样例，再用 3 秒本地媒体验证。</p>
   </section>
   <section class="proxy-panel" aria-label="公网 IP 切换">
     <div class="proxy-option"><label class="check"><input id="new-ip" type="checkbox" form="launch">每轮获取新公网 IP</label><label class="retry-field">IP 额外重试<input id="ip-retries" type="number" form="launch" min="0" max="3" step="1" value="0" required></label><span id="proxy-note">默认不额外重试；每次重新提取都可能消耗额度。</span></div>

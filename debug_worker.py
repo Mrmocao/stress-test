@@ -18,6 +18,7 @@ import types
 import urllib.parse
 import urllib.request
 from device_profiles import BASELINE, resolve_profile
+from public_state import PRIVATE_FIELDS, public_copy
 
 ROOT = Path(__file__).resolve().parent
 FILES = {'tv_playback.py', 'local_signing.py', 'buvid_lab.py', 'did_lab.py'}
@@ -38,7 +39,7 @@ def emit(kind, **data):
 
 
 def value_snapshot(value, name='', depth=0):
-    if name in PRIVATE_NAMES:
+    if name in PRIVATE_NAMES or name.lower() in PRIVATE_FIELDS:
         return '<redacted constant>'
     if value is None or isinstance(value, (bool, int)):
         return value
@@ -157,7 +158,7 @@ def install_demo(tv, run_dir, seconds):
     from playback_runtime import ffmpeg_executable
     media = run_dir / 'demo-av.mp4'
     duration = max(3, math.ceil(seconds) + 2)
-    command = [ffmpeg_executable(), '-hide_banner', '-loglevel', 'error', '-y',
+    command = [ffmpeg_executable(), '-nostdin', '-hide_banner', '-loglevel', 'error', '-y',
                '-f', 'lavfi', '-i', 'testsrc2=size=320x180:rate=25',
                '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=44100',
                '-t', str(duration), '-c:v', 'libx264', '-threads', '2', '-preset', 'ultrafast',
@@ -166,14 +167,14 @@ def install_demo(tv, run_dir, seconds):
     if fixture:
         shutil.copyfile(fixture, media)
     else:
-        subprocess.run(command, check=True, capture_output=True, timeout=120)
+        subprocess.run(command, check=True, capture_output=True, stdin=subprocess.DEVNULL, timeout=120)
     video_media, audio_media = run_dir / 'demo-video.mp4', run_dir / 'demo-audio.m4a'
     use_dash = os.environ.get('TV_DEMO_FORMAT', 'dash') == 'dash'
     if use_dash:
-        subprocess.run([ffmpeg_executable(), '-hide_banner', '-loglevel', 'error', '-y',
+        subprocess.run([ffmpeg_executable(), '-nostdin', '-hide_banner', '-loglevel', 'error', '-y',
                         '-i', str(media), '-map', '0:v:0', '-c', 'copy', '-movflags', '+faststart', str(video_media),
                         '-map', '0:a:0', '-c', 'copy', '-movflags', '+faststart', str(audio_media)],
-                       check=True, capture_output=True, timeout=30)
+                       check=True, capture_output=True, stdin=subprocess.DEVNULL, timeout=30)
     class MediaHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             selected = {'/demo.mp4': media, '/video.mp4': video_media, '/audio.m4a': audio_media}.get(self.path)
@@ -224,6 +225,8 @@ def install_demo(tv, run_dir, seconds):
             data = {'code': 0, 'data': {'now': int(time.time())}}
         elif path == '/x/report/heartbeat/mobile':
             data = {'code': 0, 'message': 'offline fixture', 'data': {}}
+        elif path in ('/x/tv/playurl/online', '/x/tv/history/add'):
+            data = {'code': 0, 'message': 'offline lifecycle fixture', 'data': {}}
         else:
             raise RuntimeError('Offline transport refuses unknown endpoint: ' + path)
         return Response(json.dumps(data).encode())
@@ -234,6 +237,7 @@ def install_demo(tv, run_dir, seconds):
         if event in ('socket.connect', 'socket.getaddrinfo'):
             raise RuntimeError('Network disabled in offline demo')
     sys.addaudithook(deny_network)
+    tv.DEMO_INSTALLED = True
 
 
 def main():
@@ -242,6 +246,8 @@ def main():
     parser.add_argument('--video', default='BV0000000000')
     parser.add_argument('--seconds', type=float, default=45)
     parser.add_argument('--heartbeat-interval', type=int, choices=(0, 15), default=0)
+    parser.add_argument('--context-file', type=Path)
+    parser.add_argument('--tv-lifecycle', action='store_true')
     parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--paused', action='store_true')
     parser.add_argument('--new-ip', action='store_true')
@@ -249,10 +255,25 @@ def main():
     parser.add_argument('--trace', action='store_true')
     parser.add_argument('--device-profile', default=BASELINE)
     parser.add_argument('--device-confirmed', action='store_true')
+    parser.add_argument('--profile-seed')
     parser.add_argument('--client-slot', default='default')
     args = parser.parse_args()
+    if args.context_file and (args.trace or args.paused):
+        parser.error('携带私有播放上下文时不启用逐行追踪；请使用普通事件日志')
     try:
-        profile = resolve_profile(args.mode, args.device_profile, args.device_confirmed)
+        profile = resolve_profile(args.mode, args.device_profile, args.device_confirmed, seed=args.profile_seed)
+        from playback_duration import duration_range
+        duration_range(args.seconds)
+        if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', args.client_slot):
+            raise ValueError('client-slot必须为1至64位字母数字下划线或连字符')
+        if args.context_file:
+            from playback_context import PlaybackContext
+            context = PlaybackContext.from_file(args.context_file)
+            context.validate_profile(profile)
+            from client_state import ClientState
+            namespace = f'{args.mode}:{profile["id"]}:{args.client_slot}:default'
+            identity = ClientState(ROOT / '.private' / 'client-state', namespace).load()
+            context.bind_runtime(profile, identity, args.client_slot, args.mode)
     except ValueError as error:
         parser.error(str(error))
     args.run_dir.mkdir(parents=True, exist_ok=True)
@@ -283,11 +304,11 @@ def main():
             if args.mode != 'live':
                 raise ProxyError('离线演示不提取代理 IP')
             lease = acquire_verified_proxy(args.ip_retries, publish=lambda **event: emit('proxy_check' if event.pop('diagnostic', False) else 'proxy', **event),
-                                           minimum_seconds=minimum_lease_seconds(args.seconds))
+                                           minimum_seconds=minimum_lease_seconds(args.seconds, lifecycle=args.tv_lifecycle))
             tv.HTTP_OPENER = lease.opener()
             tv.HTTP_PROXY = lease.url
             from execution_budget import ExecutionBudget
-            tv.RUN_BUDGET = ExecutionBudget(lease.expires_at, args.seconds)
+            tv.RUN_BUDGET = ExecutionBudget(lease.expires_at, args.seconds, lifecycle=args.tv_lifecycle)
             emit('budget', hard_deadline_epoch=time.time() + tv.RUN_BUDGET.remaining(),
                  message='代理时间预算已启用；不足以完成目标时长时跳过本轮')
             info = {'enabled': True, 'status': 'ready', 'endpoint': lease.endpoint,
@@ -310,8 +331,13 @@ def main():
             return 1
     emit('lifecycle', status='running', mode=args.mode)
     sys.argv = ['tv_playback.py', args.video if args.mode == 'live' else 'BV0000000000',
+                '--mode', args.mode,
                 '--seconds', str(args.seconds), '--run-dir', str(args.run_dir / 'playback'),
                 '--heartbeat-interval', str(args.heartbeat_interval)]
+    if args.context_file:
+        sys.argv += ['--context-file', str(args.context_file)]
+    if args.tv_lifecycle:
+        sys.argv += ['--tv-lifecycle']
     tracer = Tracer()
     if args.trace or args.paused:
         threading.settrace(tracer.trace)
