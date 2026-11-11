@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
 </head>
 <body class="compact">
-<header><a class="brand" href="/">TV<span> / </span>Playback</a><span class="connection" id="connection">连接中</span></header>
+<header><a class="brand" href="/">TV<span> / </span>Playback</a><div class="header-actions"><button id="juliang-config" class="header-config" type="button">巨量 IP 配置</button><span class="connection" id="connection">连接中</span></div></header>
 <main>
   <div class="heading"><div><h1>运行观察台 · dev</h1><p>TV 实测参数修正版 · 支持 DASH；默认仅开始、结束上报。</p></div><span class="runtime">DEV · LOCAL INSPECTOR</span></div>
   <form id="launch">
@@ -30,6 +30,11 @@
     <p id="device-effective" role="status">尚未启动；运行后显示实际选择。</p>
     <details><summary>查看当前路实际参数</summary><pre id="device-effective-preview" aria-label="当前路实际设备参数">启动后显示实际参数。</pre></details>
   </section>
+  <section class="device-panel apk-catalog" aria-label="TV APK 构建证据">
+    <div class="section-heading"><h2>TV APK 构建证据</h2><span>只读 · Manifest / 渠道 / 签名核验</span></div>
+    <p>版本号相同的 APK 可能对应不同 build_sn 和渠道；未完成运行时协议验证的构建仅可用于离线对照。</p>
+    <div class="apk-table-wrap"><table><thead><tr><th>版本</th><th>versionCode</th><th>build_sn</th><th>渠道</th><th>运行时</th></tr></thead><tbody id="apk-catalog"><tr><td colspan="5">加载构建证据…</td></tr></tbody></table></div>
+  </section>
   <section class="device-panel" aria-label="离线协议验证">
     <label>离线上下文<select id="context-preset" form="launch"><option value="none">不使用上下文</option><option value="fixture">内置样例 · QuartzTV Android 9</option></select></label>
     <label class="check"><input id="tv-lifecycle" type="checkbox" form="launch">验证 online 和 history 生命周期</label>
@@ -43,7 +48,7 @@
     <p>0 表示关闭。提取上限包含失败尝试与重试；达到上限后当前轮继续完成，后续轮次取消。连续失败按各路完成顺序累计，成功清零，自动暂停后可点“继续”。</p>
     <p id="limits-status" role="status"></p>
   </section>
-  <div class="toolbar"><p id="mode-note">各路独立重复执行；失败计数并跳过，等待 5 秒后继续下一轮。</p><div class="controls"><button id="pause" type="button">暂停派发</button><button id="resume" type="button">继续</button><button id="step" class="debug-only" type="button">单步</button><button id="stop" class="danger" type="button">停止全部</button></div></div>
+  <div class="toolbar"><p id="mode-note">各路独立重复执行；失败会保留失败原因并显示在“结果 / 原因”列，等待 5 秒后继续下一轮。</p><div class="controls"><button id="pause" type="button">暂停派发</button><button id="resume" type="button">继续</button><button id="step" class="debug-only" type="button">单步</button><button id="stop" class="danger" type="button">停止全部</button></div></div>
   <p id="error" role="alert" hidden></p>
   <section class="metrics" aria-label="运行指标">
     <div><span>运行状态</span><strong id="status">等待启动</strong><small id="pid">独立 Python 子进程</small></div>
@@ -74,5 +79,15 @@
   <section class="changes"><div class="section-heading"><h2>最近变量变化</h2><span>创建 / 修改 / 移除 · 点击回看</span></div><div id="changes" class="change-list"><p class="empty">启动后将实时显示变化记录。</p></div></section>
   <footer><div><span id="run-dir">每次启动保留独立运行目录</span><span id="history-note"></span></div><p>关键日志见 key-events.jsonl；任务结束后 summary.json 保存成功、失败和每轮结果。停止全部会结束所有并发路。</p><p class="debug-only">暂停仅冻结 Python，已启动的 FFmpeg 可能继续解码。完整调试快照见 trace.jsonl，原始请求仍保存在 .private。</p></footer>
 </main>
+<dialog id="juliang-dialog" aria-labelledby="juliang-title">
+  <form id="juliang-form" method="dialog">
+    <div class="dialog-header"><div><h2 id="juliang-title">巨量 IP 获取配置</h2><p>配置仅保存到本机 .private/juliang.json，页面不会回显 API Key。</p></div><button id="juliang-close" class="dialog-close" type="button" aria-label="关闭">×</button></div>
+    <label>订单号 / 业务编号<input id="juliang-trade-no" inputmode="numeric" autocomplete="off" placeholder="例如 123456789" required></label>
+    <label>API Key<input id="juliang-api-key" type="password" autocomplete="new-password" placeholder="输入巨量 IP API Key"></label>
+    <p id="juliang-status" class="dialog-status" role="status" aria-live="polite">读取配置状态…</p>
+    <p class="dialog-note">环境变量 <code>JULIANG_TRADE_NO</code> / <code>JULIANG_API_KEY</code> 优先于文件配置；保存后重新启动下一批真实播放生效。</p>
+    <div class="dialog-actions"><button id="juliang-cancel" type="button">取消</button><button class="primary" type="submit">保存配置</button></div>
+  </form>
+</dialog>
 </body>
 </html>

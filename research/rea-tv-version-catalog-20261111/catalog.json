@@ -1,0 +1,92 @@
+[
+  {
+    "file": "C:\\Users\\admin\\.codex\\runtimes\\rea\\tv-audit-20261111\\com.xiaodianshi.tv.yst\\base.apk",
+    "sha256": "73229ae195f45cdbfd4577b81962a4b4c9345a36abcd846e00dbc0647c127ef2",
+    "bytes": 29202494,
+    "package": "com.xiaodianshi.tv.yst",
+    "version_name": "1.8.9",
+    "version_code": 108900,
+    "build_sn": 29938492,
+    "build_sn_hex": "0x1c8d33c",
+    "mobi_app": "android_tv_yst",
+    "channels": [
+      {
+        "file": "assets/master.channel",
+        "value": "master"
+      }
+    ],
+    "package_ok": true
+  },
+  {
+    "file": "E:\\rea-tv-lab-20261111\\downloads\\shafa.apk",
+    "sha256": "541058b22798c3d5863b4f257840fb348b38233645dd88899829d4fd36234fb1",
+    "bytes": 24236234,
+    "package": "com.xiaodianshi.tv.yst",
+    "version_name": "1.8.9",
+    "version_code": 108900,
+    "build_sn": 29938502,
+    "build_sn_hex": "0x1c8d346",
+    "mobi_app": "android_tv_yst",
+    "channels": [
+      {
+        "file": "assets/shafa.channel",
+        "value": "shafa"
+      }
+    ],
+    "package_ok": true
+  },
+  {
+    "file": "E:\\rea-tv-lab-20261111\\downloads\\myygc-166.apk",
+    "sha256": "24a28ef769bd4b5c2c9819fe1971803f272f09bdcd388ab83cea25eb672615bb",
+    "bytes": 25108478,
+    "package": "com.xiaodianshi.tv.yst",
+    "version_name": "1.6.6",
+    "version_code": 106600,
+    "build_sn": 13482127,
+    "build_sn_hex": "0xcdb88f",
+    "mobi_app": "android_tv_yst",
+    "channels": [
+      {
+        "file": "assets/master.channel",
+        "value": "master"
+      }
+    ],
+    "package_ok": true
+  },
+  {
+    "file": "E:\\rea-tv-lab-20261111\\versions\\qqtf-169.apk",
+    "sha256": "e6d7cb3999bf95c44c3551f6e7f160d311205df5a9c21aed21e0aae3a1539493",
+    "bytes": 25080028,
+    "package": "com.xiaodianshi.tv.yst",
+    "version_name": "1.6.9",
+    "version_code": 106900,
+    "build_sn": 14500739,
+    "build_sn_hex": "0xdd4383",
+    "mobi_app": "android_tv_yst",
+    "channels": [
+      {
+        "file": "assets/master.channel",
+        "value": "master"
+      }
+    ],
+    "package_ok": true
+  },
+  {
+    "file": "E:\\rea-tv-lab-20261111\\versions\\962.apk",
+    "sha256": "8ed6446a3258f899394a14ff22be505708a7784fb4c478a630b1a05c9bfa6ba3",
+    "bytes": 24236236,
+    "package": "com.xiaodianshi.tv.yst",
+    "version_name": "1.8.9",
+    "version_code": 108900,
+    "build_sn": 29674886,
+    "build_sn_hex": "0x1c4cd86",
+    "mobi_app": "android_tv_yst",
+    "channels": [
+      {
+        "file": "assets/dangbei.channel",
+        "value": "dangbei"
+      }
+    ],
+    "package_ok": true
+  }
+]

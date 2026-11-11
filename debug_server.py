@@ -19,9 +19,11 @@ from playback_duration import duration_range
 from playback_heartbeat import heartbeat_interval as validate_heartbeat_interval
 from dispatch_limits import validate_limits
 from device_profiles import BASELINE, catalog, generation_rules, validate_selection
+from device_parameter_rules import tv_apk_catalog
 from public_state import public_copy
 from protocol_capabilities import CAPABILITIES
 from offline_options import validate_offline_options
+from ip_proxy import config_status, save_config
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / 'debug_ui'
@@ -418,7 +420,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(403, {'error': 'Invalid inspector token'})
             params = urllib.parse.parse_qs(parsed.query)
             if parsed.path == '/api/device-profiles':
-                return self.reply(200, {'profiles': catalog(), 'generation_rules': generation_rules()})
+                return self.reply(200, {'profiles': catalog(), 'generation_rules': generation_rules(),
+                                       'apk_catalog': tv_apk_catalog()})
+            if parsed.path == '/api/juliang-config':
+                return self.reply(200, config_status())
             if parsed.path == '/api/snapshot':
                 try:
                     after = max(0, int(params.get('after', ['0'])[0]))
@@ -473,6 +478,8 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == '/api/control':
                 self.server.inspector.control(data.get('command'))
                 return self.reply(200, {'ok': True})
+            if self.path == '/api/juliang-config':
+                return self.reply(200, save_config(data.get('trade_no', ''), data.get('api_key', '')))
             return self.reply(404, {'error': 'Unknown endpoint'})
         except (ValueError, TypeError, OSError, RuntimeError) as error:
             return self.reply(400, {'error': str(error)})

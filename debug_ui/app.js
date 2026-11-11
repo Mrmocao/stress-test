@@ -14,7 +14,9 @@ let efficiencyControlsSupported = false;
 let periodicHeartbeatSupported = false;
 let deviceProfiles = [], deviceProfilesReady = false, runActive = false;
 let deviceGenerationRules = null;
+let apkCatalog = [];
 let offlineContextSupported = false;
+let juliangConfigSupported = false;
 
 function refreshOfflineOptions() {
   const blocked = runActive || $('mode').value !== 'demo';
@@ -33,21 +35,33 @@ function renderDevicePreview() {
   $('device-preview').textContent = selected
     ? `${selected.label}\n${JSON.stringify({app_version:selected.app_version,android_version:selected.android_version,...selected.common,UserAgent:selected.user_agent},null,2)}`
     : JSON.stringify(deviceGenerationRules || {说明:'服务尚未提供生成规则，请刷新页面或更新本地服务'},null,2);
-  $('device-note').textContent = (selected ? '指定配置会重复使用，适合复现测试。' : '每轮动态生成新的合成型号与 Android/SDK 配对；固定 APK 1.8.9，本轮参数保持一致。') + (live?'真实播放沿用离线方案参数；合成方案仅表示接口兼容测试参数。':'离线演示使用本地响应。');
+  $('device-note').textContent = (selected ? '指定配置会重复使用，适合复现测试。' : '每轮创建独立测试安装，整套选择已观察到的 Android 9/11 环境；固定官网 APK 1.8.9，轮内参数保持一致。') + (live?'真实播放沿用离线方案参数；合成方案仅表示接口兼容测试参数。':'离线演示使用本地响应。');
   const needsConfirmation = live && selected?.id === 'original-tv';
   $('device-confirmation').hidden = !needsConfirmation;
   $('device-confirmed').required = needsConfirmation;
 }
 function refreshDeviceOptions() {
   const previous = $('device-profile').value;
-  // Both modes expose the same complete device plan so their parameters can
-  // be compared across offline and real transports.
-  const options = deviceProfiles.map(profile => [profile.id, profile.label]);
+  // Keep unverified APK protocol variants in the offline comparison catalog.
+  const options = deviceProfiles.filter(profile => $('mode').value !== 'live' || profile.live_eligible !== false).map(profile => [profile.id, profile.label]);
   options.push(['random-device', '动态生成测试设备（每轮新配置）']);
   $('device-profile').replaceChildren(...options.map(([value, label]) => {const option = element('option', '', label); option.value = value; return option;}));
   $('device-profile').value = options.some(([value]) => value === previous) ? previous : 'random-device';
   $('device-confirmed').checked = false;
   renderDevicePreview();
+}
+function renderApkCatalog() {
+  const body = $('apk-catalog');
+  if (!body) return;
+  const rows = apkCatalog.map(apk => {
+    const tr = element('tr');
+    tr.append(element('td', '', apk.app_version || '—'), element('td', '', apk.version_code ?? '—'),
+      element('td', 'mono', apk.build_sn ?? '—'), element('td', '', apk.channel || '—'),
+      element('td', '', apk.runtime_verified ? '已核验' : '仅离线对照'));
+    return tr;
+  });
+  if (rows.length) body.replaceChildren(...rows);
+  else { const tr = element('tr'), td = element('td', '', '服务未返回构建目录'); td.colSpan = 5; tr.append(td); body.replaceChildren(tr); }
 }
 
 async function refreshSession(staleToken) {
@@ -84,6 +98,21 @@ function format(value, pretty = false) { return value === undefined ? '∅' : JS
 function timeLabel(at) { return new Date(at*1000).toLocaleTimeString('zh-CN',{hour12:false}); }
 function element(tag, cls, text) { const el = document.createElement(tag); if(cls)el.className=cls; if(text !== undefined)el.textContent=text; return el; }
 function short(value, max=180) { const text=format(value);return text.length>max?text.slice(0,max)+'…':text; }
+function setJuliangStatus(text, kind='') { const status=$('juliang-status');status.textContent=text;status.dataset.status=kind; }
+async function loadJuliangConfig() {
+  try {
+    const data=await api('/api/juliang-config');
+    juliangConfigSupported=true;
+    $('juliang-trade-no').value=data.trade_no || '';
+    $('juliang-api-key').value='';
+    setJuliangStatus(data.configured
+      ? `已配置 · 来源：${data.source==='environment'?'环境变量':'本机配置文件'}${data.trade_no?` · 业务编号 ${data.trade_no}`:''}`
+      : '尚未配置，请填写订单号和 API Key。', data.configured?'ready':'');
+  } catch(error) {
+    juliangConfigSupported=false;
+    setJuliangStatus('当前服务未提供配置接口，请重启观察服务后再试。','error');
+  }
+}
 
 function keyMessage(event, total) {
   if(event.kind==='trace' || event.kind==='process_exit')return '';
@@ -112,11 +141,11 @@ function renderKeyLogs(logs, total) {
 }
 function renderRounds(batch, running, workers) {
   const rows=[...batch.rounds];
-  workers.forEach(worker=>{if(running && worker.round && !rows.some(row=>row.lane===worker.lane&&row.number===worker.round))rows.push({lane:worker.lane,number:worker.round,status:worker.status,exit_ip:worker.proxy.exit_ip,requests:worker.metrics.request_count || 0,errors:worker.metrics.request_errors || 0,ip_attempts:worker.metrics.ip_attempts || 0});});
+  workers.forEach(worker=>{if(running && worker.round && !rows.some(row=>row.lane===worker.lane&&row.number===worker.round))rows.push({lane:worker.lane,number:worker.round,status:worker.status,reason:worker.reason,progress:worker.progress,exit_ip:worker.proxy.exit_ip,requests:worker.metrics.request_count || 0,errors:worker.metrics.request_errors || 0,ip_attempts:worker.metrics.ip_attempts || 0});});
   rows.sort((a,b)=>a.lane-b.lane || a.number-b.number);
   const signature=JSON.stringify(rows);if(signature===roundSignature)return;roundSignature=signature;
   const fragment=document.createDocumentFragment();
-  rows.forEach(row=>{const tr=element('tr'),result=element('td',`result-${row.status}`,row.status==='failed' && row.progress?.media_status==='completed'?'播放完成 · 上报未确认':statusLabels[row.status] || row.status);if(row.reason){const reason=element('small','failure-reason',row.reason);reason.title=row.reason;result.append(reason);}tr.append(element('td','',`${row.lane} 路 / ${row.number} 轮`),element('td','ip-cell',row.exit_ip || '—'),element('td','',`${row.requests} 次${row.errors?` · 异常 ${row.errors}`:''}`),element('td','',`${row.ip_attempts || 0} 次`),result);fragment.append(tr);});
+  rows.forEach(row=>{const tr=element('tr'),result=element('td',`result-${row.status}`,row.status==='failed' && row.progress?.media_status==='completed'?'播放完成 · 上报未确认':statusLabels[row.status] || row.status);if(row.reason || row.status==='failed'){const reason=element('small',`failure-reason${row.reason?'':' pending'}`,row.reason || '失败原因待本轮结束后回填');if(row.reason)reason.title=row.reason;result.append(reason);}tr.append(element('td','',`${row.lane} 路 / ${row.number} 轮`),element('td','ip-cell',row.exit_ip || '—'),element('td','',`${row.requests} 次${row.errors?` · 异常 ${row.errors}`:''}`),element('td','',`${row.ip_attempts || 0} 次`),result);fragment.append(tr);});
   if(!rows.length){const tr=element('tr'),td=element('td','','启动后显示每轮结果');td.colSpan=5;tr.append(td);fragment.append(tr);}
   $('rounds').replaceChildren(fragment);
 }
@@ -140,7 +169,7 @@ function renderLanes(workers, batch) {
       cell.append(element('small','progress-note',`${p.frames || 0} 帧${!terminal && age>=5?` · ${age} 秒未收到新进度`:''}`));
     }else cell.append(element('span','progress-note',terminal?'本轮暂无解码进度':'等待实际解码数据'));
     if(worker.proxy.expires_at_epoch && !terminal){cell.append(element('small','progress-note',`代理剩余 ${Math.max(0,Math.floor(worker.proxy.expires_at_epoch-Date.now()/1000))} 秒`));}
-    tr.append(element('td','',`第 ${worker.lane} 路`),element('td','',`${worker.round} / ${batch.repeat}`),element('td','ip-cell',worker.proxy.exit_ip || (worker.proxy.enabled?'尚未验证':'未启用代理')),cell,element('td',`result-${worker.status}`,stage));fragment.append(tr);
+    const statusCell=element('td',`result-${worker.status}`,stage);if(worker.reason){const reason=element('small','failure-reason',worker.reason);reason.title=worker.reason;statusCell.append(reason);}tr.append(element('td','',`第 ${worker.lane} 路`),element('td','',`${worker.round} / ${batch.repeat}`),element('td','ip-cell',worker.proxy.exit_ip || (worker.proxy.enabled?'尚未验证':'未启用代理')),cell,statusCell);fragment.append(tr);
   });
   if(!workers.length){const tr=element('tr'),td=element('td','','启动后显示各路状态和实际解码进度');td.colSpan=5;tr.append(td);fragment.append(tr);}
   $('lanes').replaceChildren(fragment);
@@ -275,7 +304,10 @@ async function poll() {
     renderScopes(data.scopes);
     if($('debug-details').checked && !selectedEvent)renderVariables();
     if(data.events.length && $('debug-details').checked){renderChanges();if(currentTab==='events')renderEvents();}
-    $('status').textContent=data.running && dispatchPaused?'已暂停派发':statusLabels[data.status] || data.status;
+    const dispatchMessage = data.batch?.dispatch_message || dispatch?.message || '';
+    $('status').textContent=data.running && dispatchPaused
+      ? (dispatchMessage.includes('自动') ? '已自动暂停派发' : '已暂停派发')
+      : statusLabels[data.status] || data.status;
     $('pid').textContent=data.pid?`PID ${data.pid} · ${data.mode==='demo'?'离线演示':'真实播放'}`:'独立 Python 子进程';
     const proxy=data.proxy || {status:'disabled'};
     const proxyLabels={disabled:'本次代理未启用',acquiring:'正在提取新代理…',verifying:'正在验证公网出口…',retrying:'IP 失败，等待重试',ready:'已验证公网出口',failed:'本轮代理失败',cancelled:'已取消'};
@@ -310,7 +342,7 @@ async function poll() {
     $('batch-progress').textContent=`${finished} / ${batch.total}`;
     $('task-progress').max=Math.max(1,batch.total);$('task-progress').value=finished;
     $('batch-summary').textContent=`成功 ${batch.completed} · 失败 ${batch.failed} · ${data.status==='stopped' || batch.quota_exhausted?'已取消':'待执行'} ${Math.max(0,batch.total-batch.current)}`;
-    $('limits-status').textContent=!efficiencyControlsSupported?'当前服务尚未启用消耗保护；本批结束后重启服务生效。':`${batch.ip_limit?`提取 ${batch.ip_attempts} / 上限 ${batch.ip_limit} 次`:'未设置提取上限'}${batch.quota_exhausted?' · 已达上限，后续轮次已取消':''}${dispatchPaused?' · '+(batch.dispatch_message || '已暂停派发'):''}`;
+    $('limits-status').textContent=!efficiencyControlsSupported?'当前服务尚未启用消耗保护；本批结束后重启服务生效。':`${batch.ip_limit?`提取 ${batch.ip_attempts} / 上限 ${batch.ip_limit} 次`:'未设置提取上限'}${batch.quota_exhausted?' · 已达上限，后续轮次已取消':''}${dispatchPaused?' · '+(batch.dispatch_message || '已暂停派发')+(dispatchMessage.includes('自动')?'；继续后若连续失败仍达到阈值，会再次自动暂停':''):''}`;
     renderRounds(batch,data.running,workers);renderLanes(workers,batch);renderKeyLogs(keyLogs,batch.total);
     $('pause').textContent=data.trace_enabled && batch.concurrency===1 && !proxy.enabled?'暂停调试':'暂停派发';
     $('debug-note').textContent=data.run_dir&&!data.trace_enabled?'本次仅记录关键日志；下次启动前打开「详细调试」可同时记录源码与变量。':'';
@@ -369,7 +401,7 @@ $('launch').addEventListener('submit',async event=>{
 $('mode').addEventListener('change',()=>{
   const live=$('mode').value==='live';
   const total=Number($('concurrency').value)*Number($('repeat').value);
-  $('mode-note').textContent=`${$('concurrency').value} 路 × 每路 ${$('repeat').value} 轮 = ${total} 次。每轮在 ${$('seconds-min').value}～${$('seconds-max').value} 秒内独立随机，两端相同则固定。失败等待 5 秒后继续；暂停派发会让当前轮完成。${live?'':'离线演示不访问哔哩哔哩。'}`;
+  $('mode-note').textContent=`${$('concurrency').value} 路 × 每路 ${$('repeat').value} 轮 = ${total} 次。每轮在 ${$('seconds-min').value}～${$('seconds-max').value} 秒内独立随机，两端相同则固定。失败原因会保留在“结果 / 原因”列，等待 5 秒后继续；暂停派发会让当前轮完成。${live?'':'离线演示不访问哔哩哔哩。'}`;
   $('video').disabled=!live;
   $('new-ip').disabled=!live || $('start').disabled;
   $('ip-retries').disabled=!live || $('start').disabled;
@@ -386,7 +418,7 @@ $('device-profile').addEventListener('change',()=>{$('device-confirmed').checked
 $('context-preset').addEventListener('change',()=>{if($('context-preset').value==='fixture'){$('device-profile').value='offline-android9';renderDevicePreview();}});
 $('mode').addEventListener('change',refreshOfflineOptions);
 api('/api/device-profiles').then(data=>{
-  deviceProfiles=data.profiles;deviceGenerationRules=data.generation_rules;deviceProfilesReady=true;refreshDeviceOptions();
+  deviceProfiles=data.profiles;deviceGenerationRules=data.generation_rules;apkCatalog=data.apk_catalog || [];renderApkCatalog();deviceProfilesReady=true;refreshDeviceOptions();
   $('device-profile').disabled=runActive;$('start').disabled=runActive || busy;
 }).catch(showError);
 ['repeat','concurrency'].forEach(id=>$(id).addEventListener('input',()=>{
@@ -413,4 +445,20 @@ document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener(
   if(currentTab==='events')renderEvents();
   if(currentTab==='source' && inspectedEvent())showSource(inspectedEvent().file,inspectedEvent().line).catch(showError);
 }));
+const juliangDialog=$('juliang-dialog');
+$('juliang-config').addEventListener('click',async()=>{juliangDialog.showModal();await loadJuliangConfig();});
+['juliang-close','juliang-cancel'].forEach(id=>$(id).addEventListener('click',()=>juliangDialog.close()));
+$('juliang-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const tradeNo=$('juliang-trade-no').value.trim(),apiKey=$('juliang-api-key').value.trim();
+  if(!juliangConfigSupported){setJuliangStatus('当前服务未提供配置接口，请重启观察服务后再试。','error');return;}
+  if(!/^\d+$/.test(tradeNo)){setJuliangStatus('订单号 / 业务编号必须是数字。','error');return;}
+  if(!apiKey){setJuliangStatus('请输入 API Key。','error');return;}
+  try {
+    setJuliangStatus('正在保存…');
+    const data=await api('/api/juliang-config',{trade_no:tradeNo,api_key:apiKey});
+    $('juliang-api-key').value='';
+    setJuliangStatus(`已保存 · 业务编号 ${data.trade_no || tradeNo} · 下一批真实播放生效`,'ready');
+  } catch(error) { setJuliangStatus(error.message || String(error),'error'); }
+});
 poll();
