@@ -38,9 +38,10 @@
   </section>
   <section class="device-panel platform-catalog" aria-label="平台采集证据">
     <div class="section-heading"><h2>平台采集证据</h2><span>REA MCP · 仅展示参数名</span></div>
-    <label>查看平台<select id="evidence-platform"><option value="web">网页播放</option><option value="apk">APK（待确认目标）</option><option value="tv">TV（现有平台）</option></select></label>
+    <label>查看平台<select id="evidence-platform"><option value="web">网页播放</option><option value="apk">安卓手机版 APK</option><option value="tv">TV（现有平台）</option></select></label>
     <p id="platform-note">加载采集结果…</p>
     <p id="platform-scope"></p>
+    <pre id="platform-application" class="mono" hidden></pre>
     <details><summary>证据编号与采集边界</summary><p id="platform-evidence" class="mono"></p><ul id="platform-limitations"></ul></details>
     <p>此处切换采集证据，不切换上方 TV 播放任务。请求值、签名、Cookie、原始用户/设备 ID 和 IP 不进入公共目录。</p>
     <div class="apk-table-wrap"><table><thead><tr><th>方法 / HTTP 状态</th><th>主机 / 路径</th><th>参数位置与名称</th><th>请求 / 响应</th></tr></thead><tbody id="platform-interfaces"><tr><td colspan="4">加载接口目录…</td></tr></tbody></table></div>

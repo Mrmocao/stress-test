@@ -1,28 +1,900 @@
 {
   "id": "apk",
-  "label": "APK（待确认目标）",
-  "status": "目标待确认，尚未采集",
-  "projection": "collection_status",
+  "label": "安卓手机版 APK",
+  "status": "构建已核验；已采集独立模拟器游客启动与初始化接口",
+  "projection": "derived_names_only",
   "playback_supported": false,
-  "evidence_id": null,
-  "scope": "需确认新增安卓手机版 tv.danmaku.bili，还是独立展示已有 TV APK；本次不混用两者证据。",
+  "authority": "historical-reference",
+  "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+  "scope": "独立 Android 11 / API 30 雷电模拟器，官方 64 位 APK，匿名游客模式，接受访客协议后观察初始化；已打开视频详情，但未确认独立播放地址请求。",
+  "application": {
+    "package_name": "tv.danmaku.bili",
+    "app_version": "9.18.0",
+    "version_code": 9180300,
+    "build_sn": 30591258,
+    "channel": null,
+    "mobi_app": "android",
+    "min_sdk": "24",
+    "target_sdk": "35",
+    "artifact_sha256": "33b302b285bdbb5ee1e3030c5d65a88b8229ff3d7bbf78df105600e968109bfc",
+    "manifest_evidence_id": "ev_d686b3f49e018eaa76b2645278924a3bd6a036df24071d751d135f1783eb6af8"
+  },
+  "source": {
+    "landing_page": "https://app.bilibili.com/",
+    "download_url": "https://dl.hdslb.com/mobile/latest/android64/iBiliPlayer-bili.apk?t=20261111",
+    "page_advertised_version": "9.19.0",
+    "downloaded_manifest_version": "9.18.0",
+    "page_matches_artifact": false
+  },
   "environment_check": {
-    "operation": "list_adb_packages",
-    "evidence_id": "ev_954cb3674ec3fd0b9b9ebafde9028b494e402f2c54bb72a31b711ff5e4894f2e",
-    "target_packages_installed": false,
-    "scope": "已检查的在线模拟器第三方应用"
+    "operation": "inspect_adb_package",
+    "evidence_id": "ev_c72d8aaadd7462cc1d33b33853660c712859af53c8fc744ec79b575e308e3e08",
+    "target_package_installed": true,
+    "scope": "本次新建的独立 Android 11 测试模拟器"
+  },
+  "coverage": {
+    "status": "partial",
+    "phase": "after_guest_consent_initialization",
+    "captured_records": 60,
+    "playback_observed": "video_detail_loaded_without_confirmed_playurl",
+    "runtime_attribution_by_rea": "unknown"
   },
   "limitations": [
-    "当前检查的在线模拟器未安装 tv.danmaku.bili 或 com.xiaodianshi.tv.yst。",
-    "APK 反编译提供器缺少 JADX MCP JAR；已有签名检查不等于接口采集。",
-    "versionCode、build_sn 和 channel 必须从目标 APK 读取；未知时保留为空。"
+    "已捕获初始化、指纹、反成瘾状态、资源模块、冷启动 gRPC、点击 now、日志和 DNS 请求；视频详情已打开。",
+    "未确认独立 playurl 或 Protobuf 播放请求；静态 PlayViewUnite 结构只证明 APK 声明的 RPC，不证明本次被调用。",
+    "响应体未进入公共目录；HTTP 状态不证明业务成功；签名值、用户/设备 ID、IP 和日志载荷均已排除。",
+    "官网页面版本与实际下载包不一致，以 APK SHA-256 和 Manifest 为准。",
+    "渠道没有可靠实测值，保留为空；手机版不继承 TV 构建与设备参数。",
+    "尚未接入手机版播放工作进程；不得使用 TV worker 回放。"
   ],
-  "application": {
-    "package_name": null,
-    "app_version": null,
-    "version_code": null,
-    "build_sn": null,
-    "channel": null
-  },
-  "interfaces": []
+  "interfaces": [
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/offline/manifest",
+      "query_parameters": [
+        "appkey",
+        "build",
+        "c_locale",
+        "channel",
+        "disable_rcmd",
+        "env",
+        "fawkes_key",
+        "mobi_app",
+        "platform",
+        "s_locale",
+        "sign",
+        "statistics",
+        "ts"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-charset",
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "content-length",
+        "engine",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 29
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/report/click/now",
+      "query_parameters": [
+        "appkey",
+        "build",
+        "c_locale",
+        "channel",
+        "disable_rcmd",
+        "mobi_app",
+        "platform",
+        "s_locale",
+        "sign",
+        "statistics",
+        "ts"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-charset",
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "content-length",
+        "engine",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 28
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/share/clipboardRules",
+      "query_parameters": [
+        "appkey",
+        "build",
+        "c_locale",
+        "channel",
+        "disable_rcmd",
+        "mobi_app",
+        "platform",
+        "s_locale",
+        "sign",
+        "statistics",
+        "ts"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-aurora-eid",
+        "x-bili-aurora-zone",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-mid",
+        "x-bili-network-bin",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 25
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "app.bilibili.com",
+      "path": "/x/resource/peak/download",
+      "query_parameters": [
+        "appkey",
+        "build",
+        "c_locale",
+        "channel",
+        "disable_rcmd",
+        "mobi_app",
+        "platform",
+        "s_locale",
+        "screen_height",
+        "screen_width",
+        "sign",
+        "statistics",
+        "ts",
+        "type",
+        "ver"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-charset",
+        "accept-encoding",
+        "app-key",
+        "bili-http-engine",
+        "bili-rest-engine",
+        "buvid",
+        "content-length",
+        "engine",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-moss-engine-type",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 41
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "app.bilibili.com",
+      "path": "/x/resource/show/skin",
+      "query_parameters": [
+        "appkey",
+        "build",
+        "c_locale",
+        "channel",
+        "disable_rcmd",
+        "is_free_theme",
+        "mobi_app",
+        "platform",
+        "s_locale",
+        "sign",
+        "statistics",
+        "ts"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-charset",
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "content-length",
+        "engine",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 35
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "app.bilibili.com",
+      "path": "/x/v2/anti_addiction/aggregation/status",
+      "query_parameters": [
+        "appkey",
+        "build",
+        "c_locale",
+        "channel",
+        "disable_rcmd",
+        "mobi_app",
+        "platform",
+        "s_locale",
+        "sign",
+        "statistics",
+        "ts"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-aurora-eid",
+        "x-bili-aurora-zone",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-mid",
+        "x-bili-network-bin",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 23
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "app.bilibili.com",
+      "path": "/x/v2/version/fawkes/tribe3",
+      "query_parameters": [
+        "appkey",
+        "brand",
+        "build",
+        "channel",
+        "env",
+        "host_ver",
+        "model",
+        "nt",
+        "ov",
+        "screen",
+        "sign",
+        "ts",
+        "vn"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-aurora-eid",
+        "x-bili-aurora-zone",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-mid",
+        "x-bili-network-bin",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 27
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "i0.hdslb.com",
+      "path": "/bfs/fawkes/config/prod/android64.zip",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "env",
+        "user-agent",
+        "x-bili-network-bin"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 4
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "i0.hdslb.com",
+      "path": "/bfs/fawkes/config/prod/android64_{release}.zip",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-aurora-eid",
+        "x-bili-aurora-zone",
+        "x-bili-locale-bin",
+        "x-bili-mid",
+        "x-bili-network-bin",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 7
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "i0.hdslb.com",
+      "path": "/bfs/fawkes/dd/android64/prod/default/{release}/android64_default_{release}.zip",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "Accept-Encoding",
+        "Connection",
+        "Host",
+        "User-Agent"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 3
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "i0.hdslb.com",
+      "path": "/bfs/fawkes/dd/prod/android64.zip",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "Accept-Encoding",
+        "Connection",
+        "Host",
+        "User-Agent"
+      ],
+      "body_states": {
+        "unavailable": 2
+      },
+      "http_status_counts": {
+        "200": 2
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 2
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 16
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 2,
+      "response_count": 2,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "i0.hdslb.com",
+      "path": "/bfs/fawkes/ff/prod/android64.zip",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "env",
+        "user-agent",
+        "x-bili-network-bin"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 5
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "i0.hdslb.com",
+      "path": "/bfs/fawkes/ff/prod/android64_{release}.zip",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-aurora-eid",
+        "x-bili-aurora-zone",
+        "x-bili-locale-bin",
+        "x-bili-mid",
+        "x-bili-network-bin",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "unavailable": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 6
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "HEAD",
+      "host": "api.bilibili.com",
+      "path": "/",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "user-agent"
+      ],
+      "body_states": {
+        "unavailable": 2
+      },
+      "http_status_counts": {
+        "301": 2
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 0
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 15
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 2,
+      "response_count": 2,
+      "parameters_are_required": false
+    },
+    {
+      "method": "HEAD",
+      "host": "www.bilibili.com",
+      "path": "/",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-encoding",
+        "user-agent"
+      ],
+      "body_states": {
+        "unavailable": 2
+      },
+      "http_status_counts": {
+        "200": 2
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 1
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 17
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 2,
+      "response_count": 2,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "app.bilibili.com",
+      "path": "/x/resource/fingerprint",
+      "query_parameters": [
+        "appkey",
+        "build",
+        "c_locale",
+        "channel",
+        "disable_rcmd",
+        "mobi_app",
+        "platform",
+        "s_locale",
+        "sign",
+        "statistics",
+        "ts"
+      ],
+      "body_parameters": [
+        "content",
+        "key"
+      ],
+      "request_header_names": [
+        "accept-encoding",
+        "app-key",
+        "buvid",
+        "content-length",
+        "content-type",
+        "env",
+        "fp_local",
+        "fp_remote",
+        "guestid",
+        "session_id",
+        "user-agent",
+        "x-bili-aurora-eid",
+        "x-bili-aurora-zone",
+        "x-bili-locale-bin",
+        "x-bili-metadata-ip-region",
+        "x-bili-metadata-recent-region",
+        "x-bili-mid",
+        "x-bili-network-bin",
+        "x-bili-redirect",
+        "x-bili-ticket",
+        "x-bili-trace-id"
+      ],
+      "body_states": {
+        "json_top_level_names_only": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 21
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "data.bilibili.com",
+      "path": "/log/mobile",
+      "query_parameters": [
+        "android"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "Accept-Encoding",
+        "Connection",
+        "Content-Encoding",
+        "Content-Length",
+        "Content-Type",
+        "Host",
+        "User-Agent",
+        "infoeyes-events"
+      ],
+      "body_states": {
+        "opaque_not_decoded": 21
+      },
+      "http_status_counts": {
+        "200": 21
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 8
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 9
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 10
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 11
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 12
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 13
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 44
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 45
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 46
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 47
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 49
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 50
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 51
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 52
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 53
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 54
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 55
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 56
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 57
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 58
+        },
+        {
+          "evidence_id": "ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc",
+          "record_ordinal": 59
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 21,
+      "response_count": 21,
+      "parameters_are_required": false
+    }
+  ]
 }

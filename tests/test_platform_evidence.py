@@ -70,8 +70,11 @@ class PlatformEvidenceTests(unittest.TestCase):
     def test_catalog_marks_missing_apk_and_partial_web_honestly(self):
         catalog = {r['id']: r for r in platform_catalog()}
         self.assertEqual(set(catalog), {'tv', 'apk', 'web'})
-        self.assertEqual(catalog['apk']['interfaces'], [])
-        self.assertIsNone(catalog['apk']['application']['version_code'])
+        self.assertGreaterEqual(len(catalog['apk']['interfaces']), 1)
+        self.assertEqual(catalog['apk']['application']['package_name'], 'tv.danmaku.bili')
+        self.assertEqual(catalog['apk']['application']['version_code'], 9180300)
+        self.assertEqual(catalog['apk']['application']['build_sn'], 30591258)
+        self.assertIsNone(catalog['apk']['application']['channel'])
         self.assertEqual(catalog['web']['coverage']['status'], 'incomplete')
         self.assertFalse(catalog['web']['playback_supported'])
         self.assertFalse(any(r['path'] == '/x/player/wbi/playurl' for r in catalog['web']['interfaces']))

@@ -52,9 +52,10 @@ def body_fields(body):
     return [], 'opaque_not_decoded'
 
 
-def add(rows, request, evidence_id, reference, response_status=None, body=None, body_ref=None):
+def add(rows, request, evidence_id, reference, response_status=None, body=None, body_ref=None,
+        endpoint_resolver=endpoint):
     url = request['url']
-    key = endpoint(url)
+    key = endpoint_resolver(url)
     if key is None:
         return
     host, path = key

@@ -54,6 +54,9 @@ function refreshDeviceOptions() {
 function renderPlatformCatalog() {
   const selected = platformCatalog.find(item => item.id === $('evidence-platform').value);
   const body = $('platform-interfaces');
+  $('platform-application').hidden = !selected?.application;
+  $('platform-application').textContent = selected?.application
+    ? JSON.stringify({application:selected.application,source:selected.source},null,2) : '';
   if (!selected) {
     $('platform-note').textContent = '当前服务未返回此平台证据，请刷新或更新服务。';
     $('platform-scope').textContent = '';
