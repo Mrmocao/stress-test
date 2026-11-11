@@ -15,6 +15,7 @@ let periodicHeartbeatSupported = false;
 let deviceProfiles = [], deviceProfilesReady = false, runActive = false;
 let deviceGenerationRules = null;
 let apkCatalog = [];
+let platformCatalog = [];
 let offlineContextSupported = false;
 let juliangConfigSupported = false;
 
@@ -50,6 +51,40 @@ function refreshDeviceOptions() {
   $('device-confirmed').checked = false;
   renderDevicePreview();
 }
+function renderPlatformCatalog() {
+  const selected = platformCatalog.find(item => item.id === $('evidence-platform').value);
+  const body = $('platform-interfaces');
+  if (!selected) {
+    $('platform-note').textContent = '当前服务未返回此平台证据，请刷新或更新服务。';
+    $('platform-scope').textContent = '';
+    $('platform-evidence').textContent = '';
+    $('platform-limitations').replaceChildren();
+    const row = element('tr'), cell = element('td', '', '暂无证据'); cell.colSpan = 4; row.append(cell); body.replaceChildren(row);
+    return;
+  }
+  $('platform-note').textContent = `${selected.label} · ${selected.status} · ${selected.interfaces.length} 组接口`;
+  $('platform-scope').textContent = selected.scope;
+  $('platform-evidence').textContent = selected.evidence_id || '尚未产生目标应用的采集证据';
+  $('platform-limitations').replaceChildren(...(selected.limitations || []).map(note => element('li', '', note)));
+  const rows = selected.interfaces.map(item => {
+    const row = element('tr');
+    const status = Object.keys(item.http_status_counts).join(', ') || '未收到响应';
+    const params = [
+      `Query：${item.query_shape === 'opaque_telemetry_not_decoded' ? '不透明日志载荷（未解码）' : item.query_parameters.join(', ') || '无普通参数名'}`,
+      `Body：${item.body_parameters.join(', ') || '未取得可解析字段'}`,
+    ].join('\n');
+    row.append(element('td', 'mono', `${item.method}\n${status}`),
+      element('td', 'mono', `${item.host}\n${item.path}`), element('td', 'mono', params),
+      element('td', '', `${item.request_count} / ${item.response_count}`));
+    const detail = element('details'), summary = element('summary', '', '请求头名称与证据位置');
+    detail.append(summary, element('pre', 'mono', JSON.stringify({request_header_names:item.request_header_names,body_states:item.body_states,observations:item.observations},null,2)));
+    row.children[2].append(detail);
+    return row;
+  });
+  if (!rows.length) { const row=element('tr'), cell=element('td','','尚未采集到该目标的接口；不会使用 TV 数据替代。');cell.colSpan=4;row.append(cell);rows.push(row); }
+  body.replaceChildren(...rows);
+}
+
 function renderApkCatalog() {
   const body = $('apk-catalog');
   if (!body) return;
@@ -416,10 +451,11 @@ $('mode').dispatchEvent(new Event('change'));
 }));
 $('mode').addEventListener('change',()=>{if(deviceProfilesReady)refreshDeviceOptions();});
 $('device-profile').addEventListener('change',()=>{$('device-confirmed').checked=false;renderDevicePreview();});
+$('evidence-platform').addEventListener('change',renderPlatformCatalog);
 $('context-preset').addEventListener('change',()=>{if($('context-preset').value==='fixture'){$('device-profile').value='offline-android9';renderDevicePreview();}});
 $('mode').addEventListener('change',refreshOfflineOptions);
 api('/api/device-profiles').then(data=>{
-  deviceProfiles=data.profiles;deviceGenerationRules=data.generation_rules;apkCatalog=data.apk_catalog || [];renderApkCatalog();deviceProfilesReady=true;refreshDeviceOptions();
+  deviceProfiles=data.profiles;deviceGenerationRules=data.generation_rules;apkCatalog=data.apk_catalog || [];platformCatalog=data.platforms || [];renderApkCatalog();renderPlatformCatalog();deviceProfilesReady=true;refreshDeviceOptions();
   $('device-profile').disabled=runActive;$('start').disabled=runActive || busy;
 }).catch(showError);
 ['repeat','concurrency'].forEach(id=>$(id).addEventListener('input',()=>{

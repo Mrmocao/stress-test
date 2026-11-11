@@ -12,7 +12,7 @@
 <main>
   <div class="heading"><div><h1>运行观察台 · dev</h1><p>TV 实测参数修正版 · 支持 DASH；默认仅开始、结束上报。</p></div><span class="runtime">DEV · LOCAL INSPECTOR</span></div>
   <form id="launch">
-    <label>运行模式<select id="mode"><option value="demo">离线演示</option><option value="live">真实播放</option></select></label>
+    <label>TV 运行模式<select id="mode"><option value="demo">离线演示</option><option value="live">真实播放</option></select></label>
     <label class="video-field">视频 BV / av 号或链接<input id="video" value="BV1Gq486CEK4" placeholder="BV1Gq486CEK4" autocomplete="off"></label>
     <label class="seconds-field">最短时长 / 秒<input id="seconds-min" type="number" min="0.1" max="600" step="0.1" value="45" required></label>
     <label class="seconds-field">最长时长 / 秒<input id="seconds-max" type="number" min="0.1" max="600" step="0.1" value="45" required></label>
@@ -35,6 +35,15 @@
     <p>版本号相同的 APK 可能对应不同 build_sn 和渠道；未完成运行时协议验证的构建仅可用于离线对照。</p>
     <p>包名：com.xiaodianshi.tv.yst · versionCode / BUILD_SN 读取 APK Manifest；缺失时留空，不按版本号推算。</p>
     <div class="apk-table-wrap"><table><thead><tr><th>来源</th><th>版本</th><th>versionCode</th><th>build_sn</th><th>渠道</th><th>运行时协议</th></tr></thead><tbody id="apk-catalog"><tr><td colspan="6">加载构建证据…</td></tr></tbody></table></div>
+  </section>
+  <section class="device-panel platform-catalog" aria-label="平台采集证据">
+    <div class="section-heading"><h2>平台采集证据</h2><span>REA MCP · 仅展示参数名</span></div>
+    <label>查看平台<select id="evidence-platform"><option value="web">网页播放</option><option value="apk">APK（待确认目标）</option><option value="tv">TV（现有平台）</option></select></label>
+    <p id="platform-note">加载采集结果…</p>
+    <p id="platform-scope"></p>
+    <details><summary>证据编号与采集边界</summary><p id="platform-evidence" class="mono"></p><ul id="platform-limitations"></ul></details>
+    <p>此处切换采集证据，不切换上方 TV 播放任务。请求值、签名、Cookie、原始用户/设备 ID 和 IP 不进入公共目录。</p>
+    <div class="apk-table-wrap"><table><thead><tr><th>方法 / HTTP 状态</th><th>主机 / 路径</th><th>参数位置与名称</th><th>请求 / 响应</th></tr></thead><tbody id="platform-interfaces"><tr><td colspan="4">加载接口目录…</td></tr></tbody></table></div>
   </section>
   <section class="device-panel" aria-label="离线协议验证">
     <label>离线上下文<select id="context-preset" form="launch"><option value="none">不使用上下文</option><option value="fixture">内置样例 · QuartzTV Android 9</option></select></label>

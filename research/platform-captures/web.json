@@ -1,0 +1,1689 @@
+{
+  "id": "web",
+  "label": "网页播放",
+  "status": "已采集部分运行时接口",
+  "authority": "controlled-replay",
+  "projection": "derived_names_only",
+  "playback_supported": false,
+  "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+  "scope": "匿名 Chromium 页面加载及自动播放启动，观察 10 秒；未登录",
+  "browser": {
+    "product": "Chromium",
+    "version": "156.0.8078.4"
+  },
+  "coverage": {
+    "equality_eligible": false,
+    "missing_sections": [
+      "events"
+    ],
+    "status": "incomplete",
+    "truncated_sections": [],
+    "events_retained": 916,
+    "events_dropped": 0
+  },
+  "limitations": [
+    "仅代表本次场景，参数并集不表示全部必填字段。",
+    "部分请求体不可读取；响应体未采集，HTTP 状态不代表业务成功。",
+    "未观察到独立 playurl 请求，不能据此确认播放地址的生成流程。",
+    "日志二进制或不透明载荷未解码；未推导签名或设备标识生成算法。",
+    "仅供采集对照，尚未接入网页播放工作进程。"
+  ],
+  "interfaces": [
+    {
+      "method": "GET",
+      "host": "*.bilivideo.com",
+      "path": "/{media-object}.m4s",
+      "query_parameters": [
+        "V",
+        "agrr",
+        "build",
+        "buvid",
+        "bvc",
+        "bw",
+        "deadline",
+        "dl",
+        "e",
+        "f",
+        "gen",
+        "lrs",
+        "mid",
+        "nbs",
+        "nettype",
+        "og",
+        "oi",
+        "orderid",
+        "os",
+        "platform",
+        "qn_dyeid",
+        "trid",
+        "uipk",
+        "uparams",
+        "upsig"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "range",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 33
+      },
+      "http_status_counts": {
+        "206": 33
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 81,
+          "body_event_sequence": 82
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 83,
+          "body_event_sequence": 84
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 165,
+          "body_event_sequence": 166
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 167,
+          "body_event_sequence": 168
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 169,
+          "body_event_sequence": 170
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 181,
+          "body_event_sequence": 182
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 193,
+          "body_event_sequence": 194
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 201,
+          "body_event_sequence": 202
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 203,
+          "body_event_sequence": 204
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 291,
+          "body_event_sequence": 292
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 527,
+          "body_event_sequence": 528
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 565,
+          "body_event_sequence": 566
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 571,
+          "body_event_sequence": 572
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 619,
+          "body_event_sequence": 620
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 719,
+          "body_event_sequence": 720
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 745,
+          "body_event_sequence": 746
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 841,
+          "body_event_sequence": 842
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 845,
+          "body_event_sequence": 846
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 849,
+          "body_event_sequence": 850
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 853,
+          "body_event_sequence": 854
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 857,
+          "body_event_sequence": 858
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 859,
+          "body_event_sequence": 860
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 864,
+          "body_event_sequence": 865
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 867,
+          "body_event_sequence": 868
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 871,
+          "body_event_sequence": 872
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 875,
+          "body_event_sequence": 876
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 879,
+          "body_event_sequence": 880
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 884,
+          "body_event_sequence": 885
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 887,
+          "body_event_sequence": 888
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 893,
+          "body_event_sequence": 894
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 897,
+          "body_event_sequence": 898
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 909,
+          "body_event_sequence": 910
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 913,
+          "body_event_sequence": 914
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 33,
+      "response_count": 33,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/click-interface/click/now",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 2
+      },
+      "http_status_counts": {
+        "200": 2
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 257,
+          "body_event_sequence": 258
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 259,
+          "body_event_sequence": 260
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 2,
+      "response_count": 2,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/frontend/finger/spi",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 2
+      },
+      "http_status_counts": {
+        "200": 2
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 119,
+          "body_event_sequence": 120
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 143,
+          "body_event_sequence": 144
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 2,
+      "response_count": 2,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/internal/gaia-gateway/ExGetAxe",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 163,
+          "body_event_sequence": 164
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/kv-frontend/namespace/data",
+      "query_parameters": [
+        "appKey",
+        "nscode",
+        "unlimit",
+        "versionId"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 11
+      },
+      "http_status_counts": {
+        "200": 11
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 121,
+          "body_event_sequence": 122
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 123,
+          "body_event_sequence": 124
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 125,
+          "body_event_sequence": 126
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 141,
+          "body_event_sequence": 142
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 305,
+          "body_event_sequence": 306
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 323,
+          "body_event_sequence": 324
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 567,
+          "body_event_sequence": 568
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 576,
+          "body_event_sequence": 577
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 627,
+          "body_event_sequence": 628
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 631,
+          "body_event_sequence": 632
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 660,
+          "body_event_sequence": 661
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 11,
+      "response_count": 11,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/note/is_forbid",
+      "query_parameters": [
+        "aid",
+        "web_location",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 460,
+          "body_event_sequence": 461
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/note/publish/list/archive",
+      "query_parameters": [
+        "oid",
+        "oid_type",
+        "pn",
+        "ps",
+        "uper_mid"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 733,
+          "body_event_sequence": 734
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/player/online/total",
+      "query_parameters": [
+        "aid",
+        "bvid",
+        "cid",
+        "ts"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 616,
+          "body_event_sequence": 617
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/player/wbi/v2",
+      "query_parameters": [
+        "aid",
+        "cid",
+        "dm_cover_img_str",
+        "dm_img_inter",
+        "dm_img_list",
+        "dm_img_str",
+        "isGaiaAvoided",
+        "w_rid",
+        "web_location",
+        "wts",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 145,
+          "body_event_sequence": 146
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/sunflower/artifex/toy/video/toy",
+      "query_parameters": [
+        "aid",
+        "web_location",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 456,
+          "body_event_sequence": 457
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/v2/dm/wbi/web/seg.so",
+      "query_parameters": [
+        "oid",
+        "pe",
+        "pid",
+        "ps",
+        "pull_mode",
+        "segment_index",
+        "type",
+        "w_rid",
+        "web_location",
+        "wts",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 264,
+          "body_event_sequence": 265
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/v2/dm/web/view",
+      "query_parameters": [
+        "duration",
+        "oid",
+        "pid",
+        "type",
+        "w_rid",
+        "web_location",
+        "without_subtitle",
+        "wts",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 253,
+          "body_event_sequence": 254
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/v2/subtitle/web/view",
+      "query_parameters": [
+        "context_ext",
+        "cur_production_type",
+        "oid",
+        "pid",
+        "playlist_switch",
+        "type",
+        "w_rid",
+        "web_location",
+        "wts",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 255,
+          "body_event_sequence": 256
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/vip/ads/materials",
+      "query_parameters": [
+        "buvid",
+        "platform",
+        "position"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 629,
+          "body_event_sequence": 630
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/web-interface/broadcast/servers",
+      "query_parameters": [
+        "platform"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 581,
+          "body_event_sequence": 582
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/web-interface/nav",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 317,
+          "body_event_sequence": 318
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/web-interface/view/cards",
+      "query_parameters": [
+        "aid",
+        "bvid",
+        "cid",
+        "platform",
+        "web_location",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 462,
+          "body_event_sequence": 463
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/web-interface/view/conclusion/judge",
+      "query_parameters": [
+        "bvid",
+        "cid",
+        "up_mid",
+        "w_rid",
+        "web_location",
+        "wts",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 464,
+          "body_event_sequence": 465
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/web-interface/wbi/search/default",
+      "query_parameters": [
+        "w_rid",
+        "web_location",
+        "wts",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 625,
+          "body_event_sequence": 626
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "api.bilibili.com",
+      "path": "/x/web-show/wbi/res/locs",
+      "query_parameters": [
+        "ids",
+        "pf",
+        "w_rid",
+        "web_location",
+        "wts",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 635,
+          "body_event_sequence": 636
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "data.bilibili.com",
+      "path": "/log/web",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 23
+      },
+      "http_status_counts": {
+        "200": 23
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 278,
+          "body_event_sequence": 279
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 591,
+          "body_event_sequence": 592
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 593,
+          "body_event_sequence": 594
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 595,
+          "body_event_sequence": 596
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 651,
+          "body_event_sequence": 652
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 653,
+          "body_event_sequence": 654
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 655,
+          "body_event_sequence": 656
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 696,
+          "body_event_sequence": 697
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 698,
+          "body_event_sequence": 699
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 700,
+          "body_event_sequence": 701
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 739,
+          "body_event_sequence": 740
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 741,
+          "body_event_sequence": 742
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 743,
+          "body_event_sequence": 744
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 756,
+          "body_event_sequence": 757
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 758,
+          "body_event_sequence": 759
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 760,
+          "body_event_sequence": 761
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 769,
+          "body_event_sequence": 770
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 771,
+          "body_event_sequence": 772
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 773,
+          "body_event_sequence": 774
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 781,
+          "body_event_sequence": 782
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 783,
+          "body_event_sequence": 784
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 899,
+          "body_event_sequence": 900
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 901,
+          "body_event_sequence": 902
+        }
+      ],
+      "query_shape": "opaque_telemetry_not_decoded",
+      "request_count": 23,
+      "response_count": 23,
+      "parameters_are_required": false
+    },
+    {
+      "method": "GET",
+      "host": "passport.bilibili.com",
+      "path": "/x/passport-login/web/cookie/info",
+      "query_parameters": [
+        "web_location",
+        "x-bili-device-req-json",
+        "x-bili-locale-json"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 633,
+          "body_event_sequence": 634
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "api.bilibili.com",
+      "path": "/bapis/bilibili.api.ticket.v1.Ticket/GenWebTicket",
+      "query_parameters": [
+        "context[ts]",
+        "csrf",
+        "hexsign",
+        "key_id"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 127,
+          "body_event_sequence": 128
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "api.bilibili.com",
+      "path": "/x/click-interface/click/web/h5",
+      "query_parameters": [
+        "w_aid",
+        "w_ftime",
+        "w_part",
+        "w_rid",
+        "w_stime",
+        "w_type",
+        "web_location",
+        "wts"
+      ],
+      "body_parameters": [
+        "aid",
+        "cid",
+        "csrf",
+        "cur_language",
+        "device",
+        "extra",
+        "from_spmid",
+        "ftime",
+        "lv",
+        "mobi_app",
+        "outer",
+        "part",
+        "perfer_type",
+        "platform",
+        "play_mode",
+        "polaris_action_id",
+        "refer_url",
+        "session",
+        "spmid",
+        "statistics",
+        "stime",
+        "sub_type",
+        "track_id",
+        "type"
+      ],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "content-type",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "form_names_only": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 276,
+          "body_event_sequence": 277
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "api.bilibili.com",
+      "path": "/x/click-interface/web/heartbeat",
+      "query_parameters": [
+        "w_aid",
+        "w_dt",
+        "w_last_play_progress_time",
+        "w_played_time",
+        "w_real_played_time",
+        "w_realtime",
+        "w_rid",
+        "w_start_ts",
+        "w_video_duration",
+        "web_location",
+        "wts"
+      ],
+      "body_parameters": [
+        "aid",
+        "cid",
+        "csrf",
+        "cur_language_vt",
+        "device",
+        "dt",
+        "extra",
+        "from_spmid",
+        "is_auto_qn",
+        "last_play_progress_time",
+        "max_play_progress_time",
+        "mobi_app",
+        "outer",
+        "perfer_type",
+        "platform",
+        "play_mode",
+        "play_type",
+        "played_time",
+        "polaris_action_id",
+        "quality",
+        "real_played_time",
+        "realtime",
+        "refer_url",
+        "session",
+        "spmid",
+        "start_ts",
+        "statistics",
+        "sub_type",
+        "track_id",
+        "type",
+        "video_duration"
+      ],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "content-type",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "form_names_only": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 268,
+          "body_event_sequence": 269
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "api.bilibili.com",
+      "path": "/x/internal/gaia-gateway/ExClimbCongLing",
+      "query_parameters": [],
+      "body_parameters": [
+        "encrypt_payload",
+        "header"
+      ],
+      "request_header_names": [
+        "accept",
+        "accept-language",
+        "content-type",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "json_top_level_names_only": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 197,
+          "body_event_sequence": 198
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "api.bilibili.com",
+      "path": "/x/internal/gaia-gateway/ExClimbWuzhi",
+      "query_parameters": [],
+      "body_parameters": [
+        "payload"
+      ],
+      "request_header_names": [
+        "accept-language",
+        "content-type",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "json_top_level_names_only": 1
+      },
+      "http_status_counts": {
+        "200": 1
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 189,
+          "body_event_sequence": 190
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 1,
+      "response_count": 1,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "data.bilibili.com",
+      "path": "/log/web",
+      "query_parameters": [],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "not_exposed": 25
+      },
+      "http_status_counts": {
+        "200": 25
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 158,
+          "body_event_sequence": 159
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 191,
+          "body_event_sequence": 192
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 207,
+          "body_event_sequence": 208
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 481,
+          "body_event_sequence": 482
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 483,
+          "body_event_sequence": 484
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 485,
+          "body_event_sequence": 486
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 487,
+          "body_event_sequence": 488
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 489,
+          "body_event_sequence": 490
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 670,
+          "body_event_sequence": 671
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 672,
+          "body_event_sequence": 673
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 674,
+          "body_event_sequence": 675
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 676,
+          "body_event_sequence": 677
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 678,
+          "body_event_sequence": 679
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 680,
+          "body_event_sequence": 681
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 789,
+          "body_event_sequence": 790
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 791,
+          "body_event_sequence": 792
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 793,
+          "body_event_sequence": 794
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 795,
+          "body_event_sequence": 796
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 797,
+          "body_event_sequence": 798
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 799,
+          "body_event_sequence": 800
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 821,
+          "body_event_sequence": 822
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 823,
+          "body_event_sequence": 824
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 825,
+          "body_event_sequence": 826
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 827,
+          "body_event_sequence": 828
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 829,
+          "body_event_sequence": 830
+        }
+      ],
+      "query_shape": "opaque_telemetry_not_decoded",
+      "request_count": 25,
+      "response_count": 25,
+      "parameters_are_required": false
+    },
+    {
+      "method": "POST",
+      "host": "data.bilibili.com",
+      "path": "/v2/log/web",
+      "query_parameters": [
+        "content_type",
+        "disable_compression",
+        "logid"
+      ],
+      "body_parameters": [],
+      "request_header_names": [
+        "accept-language",
+        "content-type",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "body_states": {
+        "opaque_not_decoded": 6
+      },
+      "http_status_counts": {
+        "200": 6
+      },
+      "observations": [
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 131,
+          "body_event_sequence": 132
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 435,
+          "body_event_sequence": 436
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 437,
+          "body_event_sequence": 438
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 657,
+          "body_event_sequence": 658
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 813,
+          "body_event_sequence": 814
+        },
+        {
+          "evidence_id": "ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1",
+          "request_event_sequence": 815,
+          "body_event_sequence": 816
+        }
+      ],
+      "query_shape": "field_names_only",
+      "request_count": 6,
+      "response_count": 6,
+      "parameters_are_required": false
+    }
+  ]
+}

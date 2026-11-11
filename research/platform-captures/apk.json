@@ -1,0 +1,28 @@
+{
+  "id": "apk",
+  "label": "APK（待确认目标）",
+  "status": "目标待确认，尚未采集",
+  "projection": "collection_status",
+  "playback_supported": false,
+  "evidence_id": null,
+  "scope": "需确认新增安卓手机版 tv.danmaku.bili，还是独立展示已有 TV APK；本次不混用两者证据。",
+  "environment_check": {
+    "operation": "list_adb_packages",
+    "evidence_id": "ev_954cb3674ec3fd0b9b9ebafde9028b494e402f2c54bb72a31b711ff5e4894f2e",
+    "target_packages_installed": false,
+    "scope": "已检查的在线模拟器第三方应用"
+  },
+  "limitations": [
+    "当前检查的在线模拟器未安装 tv.danmaku.bili 或 com.xiaodianshi.tv.yst。",
+    "APK 反编译提供器缺少 JADX MCP JAR；已有签名检查不等于接口采集。",
+    "versionCode、build_sn 和 channel 必须从目标 APK 读取；未知时保留为空。"
+  ],
+  "application": {
+    "package_name": null,
+    "app_version": null,
+    "version_code": null,
+    "build_sn": null,
+    "channel": null
+  },
+  "interfaces": []
+}

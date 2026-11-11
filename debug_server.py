@@ -20,6 +20,7 @@ from playback_heartbeat import heartbeat_interval as validate_heartbeat_interval
 from dispatch_limits import validate_limits
 from device_profiles import BASELINE, catalog, generation_rules, validate_selection
 from device_parameter_rules import tv_apk_catalog
+from platform_contracts import platform_catalog, validate_playback_platform
 from public_state import public_copy
 from protocol_capabilities import CAPABILITIES
 from offline_options import validate_offline_options
@@ -205,7 +206,9 @@ class Inspector:
 
     def start(self, mode, video, seconds, paused=False, new_ip=False, repeat=1, concurrency=1, ip_retries=0, debug=False,
               device_profile=BASELINE, device_confirmed=False, seconds_min=None, seconds_max=None,
-              ip_limit=0, failure_limit=5, heartbeat_interval=0, context_preset='none', tv_lifecycle=False):
+              ip_limit=0, failure_limit=5, heartbeat_interval=0, context_preset='none', tv_lifecycle=False,
+              platform='tv'):
+        validate_playback_platform(platform)
         if mode not in ('demo', 'live'):
             raise ValueError('Unknown mode')
         seconds_min, seconds_max = duration_range(seconds, seconds_min, seconds_max)
@@ -421,7 +424,7 @@ class Handler(BaseHTTPRequestHandler):
             params = urllib.parse.parse_qs(parsed.query)
             if parsed.path == '/api/device-profiles':
                 return self.reply(200, {'profiles': catalog(), 'generation_rules': generation_rules(),
-                                       'apk_catalog': tv_apk_catalog()})
+                                       'apk_catalog': tv_apk_catalog(), 'platforms': platform_catalog()})
             if parsed.path == '/api/juliang-config':
                 return self.reply(200, config_status())
             if parsed.path == '/api/snapshot':
@@ -473,7 +476,8 @@ class Handler(BaseHTTPRequestHandler):
                                                        ip_limit=data.get('ip_limit', 0), failure_limit=data.get('failure_limit', 5),
                                                        heartbeat_interval=data.get('heartbeat_interval', 0),
                                                        context_preset=data.get('context_preset', 'none'),
-                                                       tv_lifecycle=data.get('tv_lifecycle', False))
+                                                       tv_lifecycle=data.get('tv_lifecycle', False),
+                                                       platform=data.get('platform', 'tv'))
                 return self.reply(200, {'run_dir': directory})
             if self.path == '/api/control':
                 self.server.inspector.control(data.get('command'))
