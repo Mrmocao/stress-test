@@ -44,7 +44,7 @@
 | 参数初始化 | `/x/report/click/now`、`/x/offline/manifest`、`/x/share/clipboardRules` | Query 出现 `appkey`、`build`、`channel`、`mobi_app`、`platform`、`statistics`、`sign`、`ts` 等名称；请求值不公开 |
 | 资源与风控 | `/x/resource/fingerprint`、`/x/v2/anti_addiction/aggregation/status`、`/x/v2/version/fawkes/tribe3` | 指纹、反成瘾和灰度资源接口；Body 仅保留字段名 |
 | 模块与配置 | `i0.hdslb.com/bfs/fawkes/...`、`/x/resource/peak/download`、`/x/resource/show/skin` | 配置、资源包和皮肤下载；动态发布号被模板化 |
-| 日志 | `data.bilibili.com/log/mobile` | 21 次 POST；仅保留 `android` 这一公开表单名，载荷不解码 |
+| 日志 | `data.bilibili.com/log/mobile` | 21 次 POST；仅保留 `android` 这一查询参数名，载荷不解码 |
 
 本次未确认独立 playurl HTTP 请求或手机版播放 RPC 的实际调用。REA 静态类证据表明手机版使用 `com.bapis.bilibili.app.playerunite.v1.PlayerMoss.playViewUnite`，请求 `PlayViewUniteReq` 含 `vod`、`bvid`、`spmid`、`from_spmid`、`from_scene`、`ad_extra`、`extra_content`、`fragment`、`play_ctrl`；其中 `vod` 的字段包括 `aid`、`cid`、`qn`、`fnver`、`fnval`、`fourk`、`force_host`、`prefer_codec_type`、`download` 等。该结果是 APK 静态声明，不能当作运行时请求已发生，也不能转写为 TV 的 `/x/tv/playurl`。
 
@@ -52,12 +52,14 @@
 
 REA MCP 的 ADB 提供器已通过为独立 stdio MCP 进程设置已有 `REA_ADB_PATH` 恢复；无需修改全局注册。早期在线模拟器的空检查证据为 `ev_954cb3674ec3fd0b9b9ebafde9028b494e402f2c54bb72a31b711ff5e4894f2e`；手机版实际安装检查使用独立雷电实例，Evidence 由 `apk.json` 的 `environment_check.evidence_id` 引用。
 
-APK 反编译调用缺少 `REA_JADX_MCP_JAR`；签名检查虽可用，但不能替代接口运行时采集。APK 目标确认后，需要获取实际安装包、核验包名与 SHA-256、读取 Manifest 版本/渠道，再在专用测试环境采集。`versionCode`、`build_sn` 未读到时为空，绝不从版本字符串或 TV 样本填充手机版。
+早期缺少 `REA_JADX_MCP_JAR` 的问题已通过独立 REA 会话配置解决；已取得 Manifest 和播放相关类的静态证据。剩余工作是确认手机版实际播放 RPC、解码其 Protobuf 请求字段并建立与播放阶段的关联，目前不能宣称完成手机版播放全链路采集。`versionCode`、`build_sn` 未读到时为空，绝不从版本字符串或 TV 样本填充手机版。
 
 ## 证据与复现
 
 - 网页：`ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1`。
 - 历史 TV HAR：`ev_ffa9a4e4c5d7cdae63bba587d4b3a145db66b0d848e0544ce40eadf286aa66b9`。
+- 手机版 HAR：`ev_ef7d5f8595312b709073d5791364764fd4234866685b353e2c4b665139ddf8fc`；Manifest：`ev_d686b3f49e018eaa76b2645278924a3bd6a036df24071d751d135f1783eb6af8`。
+- 手机版静态 `PlayViewUniteReq`：`ev_b96d3834ee54a0a17df9a581026aa2bef01f8f43e39b830d3cad3229d433a27d`；`VideoVod`：`ev_ab615a1fa06e4c970ea943266ce51b3160d5d037b1871e4e1ef9921f77c6f8a6`；`PlayerMoss.playViewUnite`：`ev_6bccea5d4f8cbaa61335dbfafd13efbd2bad44c6800a05d112f2d197f70f1ac6`。
 - 原始 REA bundle 仅保留在本机私有实验目录 `E:\rea-tv-lab-20261111\platform-captures\rea-evidence-bundle.json`，不要提交或发布。
 - 每个公共接口的 `observations` 指向原始事件序号或 HAR 记录序号。HTTP 状态按请求 transaction_id 对应，而不是按事件时间猜配对。
 
@@ -65,6 +67,7 @@ APK 反编译调用缺少 `REA_JADX_MCP_JAR`；签名检查虽可用，但不能
 
 ```powershell
 .venv\Scripts\python.exe tools\extract_platform_evidence.py E:\rea-tv-lab-20261111\platform-captures\rea-evidence-bundle.json --web-evidence ev_5b16a22ea440a12a336f4dc50d08aca7e05cd692d4ec753376e82784c1aa25e1 --tv-evidence ev_ffa9a4e4c5d7cdae63bba587d4b3a145db66b0d848e0544ce40eadf286aa66b9 --output research\platform-captures
+.venv\Scripts\python.exe tools\extract_mobile_evidence.py --manifest E:\rea-tv-lab-20261111\mobile-apk\manifest-evidence-direct.json --installed E:\rea-tv-lab-20261111\mobile-apk\rea-ld-package.json --capture E:\rea-tv-lab-20261111\mobile-apk\playback-evidence-direct.json --output research\platform-captures\apk.json
 ```
 
 三个平台各自维护证据；TV 的 APK 常量、Android 环境、身份生成器不应用到网页。网页采集使用浏览器自身产生的会话和请求，公共目录只提取结构。仅凭本次单场景证据，不提供跨版本稳定性或全平台完整性承诺。
