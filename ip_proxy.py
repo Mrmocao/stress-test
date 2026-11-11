@@ -27,6 +27,52 @@ ERRORS = {401: '签名校验失败，请检查订单号和 API Key', 402: '请�
           429: '提取频率超限，请稍后再试'}
 
 
+def config_status():
+    """Return safe configuration metadata without exposing the API key."""
+    try:
+        config = json.loads(CONFIG_PATH.read_text(encoding='utf-8')) if CONFIG_PATH.exists() else {}
+    except (OSError, ValueError, TypeError):
+        config = {}
+    env_trade = os.environ.get('JULIANG_TRADE_NO', '').strip()
+    env_key = os.environ.get('JULIANG_API_KEY', '').strip()
+    trade_no = env_trade or str(config.get('trade_no', '')).strip()
+    api_key = env_key or config.get('api_key', '')
+    valid_trade = bool(re.fullmatch(r'[0-9]+', trade_no))
+    valid_key = isinstance(api_key, str) and bool(api_key.strip())
+    return {'configured': valid_trade and valid_key,
+            'trade_no': trade_no if valid_trade else '',
+            'source': 'environment' if env_trade or env_key else 'file',
+            'file_exists': CONFIG_PATH.exists()}
+
+
+def save_config(trade_no, api_key):
+    """Validate and atomically persist local Juliang credentials."""
+    trade_no = str(trade_no).strip()
+    api_key = api_key.strip() if isinstance(api_key, str) else ''
+    if not re.fullmatch(r'[0-9]+', trade_no):
+        raise ValueError('订单号 / 业务编号必须是数字')
+    if not api_key:
+        raise ValueError('API Key 不能为空')
+    if len(api_key) > 512:
+        raise ValueError('API Key 长度无效')
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = CONFIG_PATH.with_name(CONFIG_PATH.name + '.tmp')
+    temporary.write_text(json.dumps({'trade_no': trade_no, 'api_key': api_key}, ensure_ascii=False, indent=2) + '\n',
+                                  encoding='utf-8')
+    try:
+        os.replace(temporary, CONFIG_PATH)
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+    try:
+        os.chmod(CONFIG_PATH, 0o600)
+    except OSError:
+        pass
+    return config_status()
+
+
 class ProxyError(RuntimeError):
     def __init__(self, message, *, code=None, retryable=True, source_ip=''):
         super().__init__(message)

@@ -161,7 +161,7 @@ class ReviewOptimizationTests(unittest.TestCase):
             def close(self):
                 pass
 
-        for selection in [p['id'] for p in catalog() if p['synthetic']] + [RANDOM, LEGACY_RANDOM]:
+        for selection in [p['id'] for p in catalog() if p['synthetic'] and p['live_eligible']] + [RANDOM, LEGACY_RANDOM]:
             with self.subTest(selection=selection), patch('debug_server.subprocess.Popen') as spawn:
                 process = spawn.return_value
                 process.pid = 1234

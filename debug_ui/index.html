@@ -33,7 +33,8 @@
   <section class="device-panel apk-catalog" aria-label="TV APK 构建证据">
     <div class="section-heading"><h2>TV APK 构建证据</h2><span>只读 · Manifest / 渠道 / 签名核验</span></div>
     <p>版本号相同的 APK 可能对应不同 build_sn 和渠道；未完成运行时协议验证的构建仅可用于离线对照。</p>
-    <div class="apk-table-wrap"><table><thead><tr><th>版本</th><th>versionCode</th><th>build_sn</th><th>渠道</th><th>运行时</th></tr></thead><tbody id="apk-catalog"><tr><td colspan="5">加载构建证据…</td></tr></tbody></table></div>
+    <p>包名：com.xiaodianshi.tv.yst · versionCode / BUILD_SN 读取 APK Manifest；缺失时留空，不按版本号推算。</p>
+    <div class="apk-table-wrap"><table><thead><tr><th>来源</th><th>版本</th><th>versionCode</th><th>build_sn</th><th>渠道</th><th>运行时协议</th></tr></thead><tbody id="apk-catalog"><tr><td colspan="6">加载构建证据…</td></tr></tbody></table></div>
   </section>
   <section class="device-panel" aria-label="离线协议验证">
     <label>离线上下文<select id="context-preset" form="launch"><option value="none">不使用上下文</option><option value="fixture">内置样例 · QuartzTV Android 9</option></select></label>

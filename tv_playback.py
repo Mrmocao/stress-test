@@ -220,13 +220,14 @@ def read_response(response, event, deadline):
 
 
 def notify_network(event, started):
+    safe = {key: event[key] for key in
+            ('path', 'method', 'http_status', 'code', 'error_type', 'identity_update',
+             'phase', 'attempt', 'max_attempts', 'retry_in', 'error_message',
+             'cause_type', 'errno', 'winerror', 'bytes_read', 'content_length',
+             'heartbeat_phase', 'played_time', 'content_encoding', 'decoded_bytes') if key in event}
+    elapsed_ms = round((time.monotonic() - started) * 1000)
     if NETWORK_OBSERVER is not None:
-        NETWORK_OBSERVER({key: event[key] for key in
-                          ('path', 'method', 'http_status', 'code', 'error_type', 'identity_update',
-                           'phase', 'attempt', 'max_attempts', 'retry_in', 'error_message',
-                           'cause_type', 'errno', 'winerror', 'bytes_read', 'content_length',
-                           'heartbeat_phase', 'played_time', 'content_encoding', 'decoded_bytes') if key in event},
-                         round((time.monotonic() - started) * 1000))
+        NETWORK_OBSERVER(safe, elapsed_ms)
 
 
 def public_json(path):
@@ -448,9 +449,20 @@ def play_one(client, video, run_state, run_dir, target_seconds):
         target = min(target_seconds, duration)
         if RUN_BUDGET:
             RUN_BUDGET.begin_playback(target)
-        item.update(duration=duration, target_seconds=target, quality=result['quality'], media_kind=media['kind'],
+        item.update(duration=duration, target_seconds=target,
+                    requested_quality=result.get('quality'), quality=media.get('quality', result.get('quality')),
+                    media_kind=media['kind'],
+                    media_selection=media.get('selection'),
+                    media_candidates=[{'quality': candidate.get('quality'),
+                                       'reason': candidate.get('selection_reason'),
+                                       'url_fingerprints': candidate.get('url_fingerprints', [])}
+                                      for candidate in media.get('candidates', [])],
                     media_host=urllib.parse.urlsplit(url).hostname,
                     media_url_sha256=hashlib.sha256(url.encode()).hexdigest())
+        selection = media.get('selection') or {}
+        print(f'{label}: media selection requested={selection.get("requested_quality")} '
+              f'selected={selection.get("selected_quality")} reason={selection.get("reason")} '
+              f'candidates={selection.get("candidate_count", 1)}', flush=True)
         playback_progress(stage='connecting', decoded_seconds=0, frames=0, target_seconds=target)
         output = private / f'{bvid}.ffmpeg.log'
         progress_file = run_dir / f'{bvid}.progress.jsonl'
@@ -649,6 +661,12 @@ def play_one(client, video, run_state, run_dir, target_seconds):
         # Error strings may contain signed CDN URLs. Keep details private.
         item['error_type'] = type(error).__name__
         item['failure_reason'] = playback_failure_message(error)
+        selection = item.get('media_selection') or {}
+        if selection:
+            item['failure_reason'] += (f'；媒体选择 requested={selection.get("requested_quality")}，'
+                                       f'selected={selection.get("selected_quality")}，'
+                                       f'reason={selection.get("reason")}，'
+                                       f'candidates={selection.get("candidate_count", 1)}')
         if item.get('media_status') == 'completed':
             item['failure_reason'] = '播放完成，上报未确认；' + item['failure_reason']
         (private / f'{bvid}.error.txt').write_text(str(error), encoding='utf-8')

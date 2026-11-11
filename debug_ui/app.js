@@ -33,7 +33,7 @@ function renderDevicePreview() {
   const live = $('mode').value === 'live';
   const selected = deviceProfiles.find(profile => profile.id === $('device-profile').value);
   $('device-preview').textContent = selected
-    ? `${selected.label}\n${JSON.stringify({app_version:selected.app_version,android_version:selected.android_version,...selected.common,UserAgent:selected.user_agent},null,2)}`
+    ? `${selected.label}\n${JSON.stringify({application:selected.application,android_version:selected.android_version,...selected.common,UserAgent:selected.user_agent},null,2)}`
     : JSON.stringify(deviceGenerationRules || {说明:'服务尚未提供生成规则，请刷新页面或更新本地服务'},null,2);
   $('device-note').textContent = (selected ? '指定配置会重复使用，适合复现测试。' : '每轮创建独立测试安装，整套选择已观察到的 Android 9/11 环境；固定官网 APK 1.8.9，轮内参数保持一致。') + (live?'真实播放沿用离线方案参数；合成方案仅表示接口兼容测试参数。':'离线演示使用本地响应。');
   const needsConfirmation = live && selected?.id === 'original-tv';
@@ -55,13 +55,14 @@ function renderApkCatalog() {
   if (!body) return;
   const rows = apkCatalog.map(apk => {
     const tr = element('tr');
-    tr.append(element('td', '', apk.app_version || '—'), element('td', '', apk.version_code ?? '—'),
+    tr.title = `APK SHA-256: ${apk.artifact_sha256}\nManifest BUILD_SN: ${apk.build_sn_hex}`;
+    tr.append(element('td', '', apk.source_name || '—'), element('td', '', apk.app_version || '—'), element('td', '', apk.version_code ?? '—'),
       element('td', 'mono', apk.build_sn ?? '—'), element('td', '', apk.channel || '—'),
       element('td', '', apk.runtime_verified ? '已核验' : '仅离线对照'));
     return tr;
   });
   if (rows.length) body.replaceChildren(...rows);
-  else { const tr = element('tr'), td = element('td', '', '服务未返回构建目录'); td.colSpan = 5; tr.append(td); body.replaceChildren(tr); }
+  else { const tr = element('tr'), td = element('td', '', '服务未返回构建目录'); td.colSpan = 6; tr.append(td); body.replaceChildren(tr); }
 }
 
 async function refreshSession(staleToken) {
@@ -361,7 +362,7 @@ async function poll() {
     const effectiveWorker=workers.find(w=>w.lane===Number($('debug-lane').value)) || workers[0];
     const effectiveProfile=effectiveWorker?.device_profile;
     $('device-effective-preview').textContent=effectiveProfile
-      ? `第 ${effectiveWorker.lane} 路 / 第 ${effectiveWorker.round} 轮\n${JSON.stringify({app_version:effectiveProfile.app_version,android_version:effectiveProfile.android_version,...effectiveProfile.common,UserAgent:effectiveProfile.user_agent,generation_seed:effectiveProfile.generation_seed},null,2)}`
+      ? `第 ${effectiveWorker.lane} 路 / 第 ${effectiveWorker.round} 轮\n${JSON.stringify({application:effectiveProfile.application,android_version:effectiveProfile.android_version,generation_version:effectiveProfile.generation_version,identity_policy:effectiveProfile.identity_policy,...effectiveProfile.common,UserAgent:effectiveProfile.user_agent},null,2)}`
       : '启动后显示实际参数。';
     $('device-profile').disabled=data.running || !deviceProfilesReady;
     refreshOfflineOptions();

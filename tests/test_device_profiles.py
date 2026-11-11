@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import device_profiles as profiles
 from debug_server import Inspector
 import tv_playback as tv
+from public_state import public_copy
 
 
 class DeviceProfileTests(unittest.TestCase):
@@ -24,14 +25,14 @@ class DeviceProfileTests(unittest.TestCase):
         self.assertEqual(profiles.resolve_profile('live', 'original-tv', True)['id'], 'original-tv')
 
     def test_legacy_fixed_profiles_remain_selectable_and_copies_are_isolated(self):
-        fixtures = [p for p in profiles.catalog() if p['synthetic']]
+        fixtures = [p for p in profiles.catalog() if p['id'].startswith('offline-')]
         self.assertEqual(len(fixtures), 10)
         self.assertEqual(len({p['common']['model'] for p in fixtures}), 10)
         self.assertEqual({v:sum(p['app_version'] == v for p in fixtures) for v in profiles.SIMULATED_VERSIONS},
                          {'1.8.9':4, '1.8.8':3, '1.8.7':3})
         for fixture in fixtures:
             key = fixture['id']
-            for mode in ('demo', 'live'):
+            for mode in ('demo',):
                 selected = profiles.resolve_profile(mode, key)
                 self.assertFalse(selected['actual_client_confirmed'])
                 self.assertTrue(selected['offline_only'])
@@ -41,6 +42,10 @@ class DeviceProfileTests(unittest.TestCase):
             self.assertIn('BiliTV/' + selected['app_version'], selected['user_agent'])
             self.assertEqual(common['sys_ver'], {'8.1':'27', '9':'28', '10':'29', '11':'30', '12':'31', '13':'33'}[selected['android_version']])
             self.assertEqual(common['build'], profiles.SIMULATED_VERSIONS[selected['app_version']])
+            if not selected['live_eligible']:
+                with self.assertRaises(ValueError):
+                    profiles.resolve_profile('live', key, True)
+                continue
             for confirmed in (False, True):
                 selected_live = profiles.resolve_profile('live', key, confirmed)
                 self.assertEqual(selected_live['id'], key)
@@ -51,8 +56,8 @@ class DeviceProfileTests(unittest.TestCase):
     def test_generation_is_reproducible_coherent_and_not_a_fixed_pool(self):
         generated = [profiles.generate_profile(f'{i:032x}') for i in range(256)]
         self.assertEqual(len({p['id'] for p in generated}), 256)
-        self.assertEqual(len({p['common']['model'] for p in generated}), 256)
-        pairs = {android: sdk for android, sdk, _ in profiles.ANDROID_SYSTEMS}
+        self.assertEqual(len({p['common']['model'] for p in generated}), 2)
+        pairs = {'9': '28', '11': '30'}
         self.assertEqual({p['android_version'] for p in generated}, set(pairs))
         for profile in generated:
             self.assertEqual(profile, profiles.generate_profile(profile['generation_seed']))
@@ -61,7 +66,9 @@ class DeviceProfileTests(unittest.TestCase):
             self.assertEqual((profile['app_version'], common['build'], common['build_sn']),
                              ('1.8.9', '108900', '29938492'))
             self.assertEqual(json.loads(common['statistics'])['version'], common['build'])
-            self.assertEqual(common['brand'], 'tv-lab')
+            self.assertEqual(common['brand'], profile['environment']['brand'])
+            self.assertNotIn(profile['generation_seed'], profile['id'])
+            self.assertTrue(profile['application']['artifact_verified'])
             self.assertIn('model/' + common['model'] + ' ', profile['user_agent'])
             self.assertIn('osVer/' + profile['android_version'] + ' ', profile['user_agent'])
             self.assertIn('innerVer/' + common['build'], profile['user_agent'])
@@ -76,7 +83,7 @@ class DeviceProfileTests(unittest.TestCase):
                 second = profiles.resolve_profile(mode, profiles.RANDOM)
             self.assertEqual(entropy.call_count, 2)
             self.assertNotEqual(first['id'], second['id'])
-            self.assertNotEqual(first['common']['model'], second['common']['model'])
+            self.assertEqual(first['application'], second['application'])
             self.assertFalse(first['actual_client_confirmed'])
             self.assertEqual(first['selection'], profiles.RANDOM)
 
@@ -114,9 +121,10 @@ class DeviceProfileTests(unittest.TestCase):
         inspector.record({'kind':'round', 'phase':'start', 'lane':1, 'round':2, 'run_dir':'test2'})
         self.assertIsNone(inspector.worker(1)['device_profile'])
 
-    def test_all_three_versions_reach_request_fields_in_both_mode_branches(self):
+    def test_verified_artifacts_reach_request_fields_with_local_transport(self):
         cases = [(mode, key) for mode in ('demo', 'live')
-                 for key in ('offline-android9', 'offline-tv05', 'offline-tv08', profiles.RANDOM)]
+                 for key in ('offline-android9', 'apk-shafa-189', 'apk-master-166', 'apk-master-169', 'apk-dangbei-189', profiles.RANDOM)
+                 if mode == 'demo' or key in ('offline-android9', profiles.RANDOM)]
         for mode, key in cases:
             with self.subTest(mode=mode, profile=key), tempfile.TemporaryDirectory() as folder:
                 root = Path(folder)
@@ -136,7 +144,11 @@ class DeviceProfileTests(unittest.TestCase):
                 state = json.loads((root / 'playback/state.json').read_text(encoding='utf-8'))
                 with patch.object(profiles.secrets, 'token_hex', return_value='e' * 32):
                     selected = profiles.resolve_profile(mode, key)
-                self.assertEqual(state['device_profile'], selected)
+                self.assertEqual(state['device_profile'], public_copy(selected))
+                exported = (root / 'device-profile.json').read_text(encoding='utf-8')
+                if 'generation_seed' in selected:
+                    self.assertNotIn(selected['generation_seed'], exported)
+                    self.assertNotIn(selected['generation_seed'], result.stdout.decode(errors='replace'))
                 self.assertEqual(state['private_dir'], '<redacted>')
                 with patch.object(tv, 'ROOT', root):
                     private = Path(tv.read_runtime_state(root / 'playback/state.json')['private_dir'])
@@ -152,7 +164,9 @@ class DeviceProfileTests(unittest.TestCase):
                     if r['kind'] == 'CLICK':
                         continue
                     body = urlsplit(r['url']).query if r['kind'] == 'GET' else p.with_suffix('.body').read_text()
-                    self.assertEqual(parse_qs(body)['build'], [selected['common']['build']])
+                    params = parse_qs(body)
+                    for field in ('build', 'build_sn', 'channel', 'mobi_app', 'model', 'brand', 'sys_ver', 'statistics'):
+                        self.assertEqual(params[field], [selected['common'][field]])
 
     def test_legacy_random_selection_is_compatible_without_claiming_device_verification(self):
         for mode in ('demo', 'live'):

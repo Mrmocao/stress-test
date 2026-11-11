@@ -21,6 +21,7 @@
 | 请求头 | 加入 App-Key、env、独立 request session；extra.session_id 与该 session 一致 |
 | 取流 | qn=80、fnval=131088、force_host=0、fourk=1；使用响应返回的实际质量 |
 | 媒体 | 支持 DASH 视频/音频独立输入，两路都设置节流、UA、超时和代理；兼容单段 MP4；拒绝 DRM/试看 |
+| 媒体降级 | 清晰度缺少服务端返回值时按“最近较低质量→最低可用质量”选择；记录请求质量、实际选择质量、可用质量和候选地址指纹，不把签名 URL 写入公开状态 |
 | 上报字段 | video_duration、internal_track_id；UGC heartbeat 去除 sid，click 保留；part 优先使用对应 CID 的实际分 P 页码，缺失时 -1 |
 | DID | 首次省略；服务端 rpdid 保存到后续会话；14013 不立即重发同一 click，也不算上报成功 |
 | 时间 | click.stime 来自 /x/click-interface/click/now；ftime 首次使用服务器时间，之后持久复用 |
@@ -36,6 +37,7 @@
 - teenager_mode、auto_play 等保持本项目场景配置，没有把官方首页样本中的 3、6 当成全局常量。UA 的 network/2 与 heartbeat 的 network_type/1 仍是测试配置，没有 Android 实时网络探测。
 - 这是 FFmpeg 顺序解码客户端，无电视 seek、暂停、后台恢复状态机。媒体位置取解码进度；played_time 仍是受墙钟约束的解码时长估计；没有播放器暂停操作，因此 paused_time 为 0，连接/等待不再误记为暂停。此时间模型未完整复现官方 SDK。
 - 默认 Buvid 仍是本地生成的测试身份，只改为持久保存；并非抓包设备的真实硬件身份。同一个配置和并发路跨批次复用身份；同时启动多个观察服务时，同编号路也会复用，文件锁仅保证存储一致。
+- 观察台每个工作进程会额外保存 `protocol-timeline.jsonl` 和 `protocol-timeline.json`，记录接口顺序、阶段、状态码、业务 code、心跳阶段和耗时；仅保存脱敏路径与 URL 指纹，用于与同场景抓包逐项对照。
 - 已完成下述单视频公网回归；尚未覆盖不同账号、内容类型和完整 TV 生命周期，也不保证 TV 服务对尚未实现的游客/场景字段始终采取相同行为。
 
 ## 验证记录

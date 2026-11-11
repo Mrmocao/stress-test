@@ -37,7 +37,7 @@ class ArtifactContractTests(unittest.TestCase):
             self.assertIsNone(contract['version_code'])
             self.assertIsNone(contract['build_sn'])
             self.assertFalse(contract['artifact_verified'])
-        for selection in ('offline-tv05', 'offline-tv08', 'apk-shafa-189', 'apk-master-166'):
+        for selection in ('offline-tv05', 'offline-tv08', 'apk-shafa-189', 'apk-master-166', 'apk-master-169', 'apk-dangbei-189'):
             self.assertTrue(resolve_profile('demo', selection)['synthetic'])
             with self.assertRaises(ValueError):
                 resolve_profile('live', selection, True)

@@ -39,6 +39,13 @@ _APKS = {
     QQTF_169_TV_APK: ('1.6.9', 106900, 14500739, 'master', False),
     DANGBEI_189_TV_APK: ('1.8.9', 108900, 29674886, 'dangbei', False),
 }
+_APK_SOURCES = {
+    OFFICIAL_TV_APK: ('官网', 'https://dl.hdslb.com/mobile/latest/android_tv_yst/iBiliTV-master.apk'),
+    SHAFA_TV_APK: ('沙发', 'https://app.shafa.com/apk/yunshitingxiaodianshi.html'),
+    HISTORICAL_TV_APK: ('历史包', 'https://m.myygc.com/yybf/1078.html'),
+    QQTF_169_TV_APK: ('QQ下载站', 'https://www.qqtf.com/azrj/102296.html'),
+    DANGBEI_189_TV_APK: ('962 镜像（页面标 1.8.7）', 'https://www.962.net/azsoft/554527.html'),
+}
 # Retained only for existing offline regression cases, never APK evidence.
 _LEGACY = {'1.8.8': '108800', '1.8.7': '108700'}
 
@@ -69,6 +76,8 @@ def tv_apk_contract(version=None, *, artifact_sha256=None):
         'version_code': code, 'build': str(code), 'build_sn': str(serial),
         'artifact_sha256': artifact_sha256, 'signer_sha256': _SIGNER,
         'build_sn_hex': hex(serial),
+        'source_name': _APK_SOURCES[artifact_sha256][0],
+        'source_url': _APK_SOURCES[artifact_sha256][1],
         'artifact_verified': True, 'runtime_verified': runtime,
         'native_abis': ['armeabi-v7a'],
         'platform': 'android', 'mobi_app': 'android_tv_yst', 'channel': channel,

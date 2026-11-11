@@ -141,9 +141,9 @@ class BatchTests(unittest.TestCase):
         for lane in (1, 2):
             inspector.record({'kind': 'round', 'phase': 'finish', 'lane': lane, 'round': 1, 'status': 'completed'})
         rows = inspector.batch['rounds']
-        self.assertEqual([(r['exit_ip'], r['requests']) for r in rows], [('8.8.8.1', 1), ('8.8.8.2', 2)])
+        self.assertEqual([(r['exit_ip'], r['requests']) for r in rows], [('<redacted>', 1), ('<redacted>', 2)])
         self.assertEqual(inspector.batch['requests'], 3)
-        self.assertEqual(inspector.snapshot(0, lane=1)['proxy']['exit_ip'], '8.8.8.1')
+        self.assertEqual(inspector.snapshot(0, lane=1)['proxy']['exit_ip'], '<redacted>')
 
     def test_concurrency_and_retry_inputs_are_validated(self):
         for value in (0, 101, True, 1.5, '2'):
@@ -219,7 +219,7 @@ class BatchTests(unittest.TestCase):
         self.assertEqual(inspector.metrics['ip_used'], 1)
         self.assertEqual([row['ip_used'] for row in inspector.batch['rounds']], [2, 1])
         self.assertEqual(inspector.metrics['request_count'], 1)
-        self.assertEqual([row['exit_ip'] for row in inspector.batch['rounds']], ['8.8.8.1', '8.8.8.2'])
+        self.assertEqual([row['exit_ip'] for row in inspector.batch['rounds']], ['<redacted>', '<redacted>'])
         result = inspector.snapshot(0, detail=False)
         self.assertEqual(result['batch']['ip_used'], 3)
         self.assertTrue(all(event['kind'] != 'trace' for event in result['events']))

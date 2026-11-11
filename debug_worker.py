@@ -18,7 +18,7 @@ import types
 import urllib.parse
 import urllib.request
 from device_profiles import BASELINE, resolve_profile
-from public_state import PRIVATE_FIELDS, public_copy
+from public_state import PRIVATE_FIELDS, public_copy, is_private_field
 
 ROOT = Path(__file__).resolve().parent
 FILES = {'tv_playback.py', 'local_signing.py', 'buvid_lab.py', 'did_lab.py'}
@@ -34,12 +34,12 @@ PRIVATE_NAMES = {'APP_SECRET', 'AES_KEY', 'AES_IV', 'CLICK_SALT', 'guest_access_
 
 def emit(kind, **data):
     with WRITE_LOCK:
-        TRANSPORT.write(json.dumps({'kind': kind, 'at': time.time(), **data}, ensure_ascii=True) + '\n')
+        TRANSPORT.write(json.dumps({'kind': kind, 'at': time.time(), **public_copy(data)}, ensure_ascii=True) + '\n')
         TRANSPORT.flush()
 
 
 def value_snapshot(value, name='', depth=0):
-    if name in PRIVATE_NAMES or name.lower() in PRIVATE_FIELDS:
+    if name in PRIVATE_NAMES or is_private_field(name):
         return '<redacted constant>'
     if value is None or isinstance(value, (bool, int)):
         return value
@@ -47,6 +47,7 @@ def value_snapshot(value, name='', depth=0):
         return value if math.isfinite(value) else str(value)
     if isinstance(value, str):
         value = re.sub(r'(https?://[^\s?]+)\?[^\s\x27\"]+', r'\1?<signed query hidden>', value)
+        value = public_copy(value)
         return value[:1500] + ('…' if len(value) > 1500 else '')
     if isinstance(value, bytes):
         return {'type': 'bytes', 'length': len(value), 'sha256': hashlib.sha256(value).hexdigest()}
@@ -291,10 +292,26 @@ def main():
     tv.RUN_BUDGET = None
     tv.CLIENT_STATE_MODE = args.mode
     tv.CLIENT_STATE_SLOT = args.client_slot
-    tv.NETWORK_OBSERVER = lambda event, elapsed_ms: emit('network', mode=args.mode, elapsed_ms=elapsed_ms, **event)
+    timeline = []
+    timeline_lock = threading.Lock()
+    timeline_file = args.run_dir / 'protocol-timeline.jsonl'
+    timeline_seq = 0
+
+    def observe_network(event, elapsed_ms):
+        nonlocal timeline_seq
+        with timeline_lock:
+            timeline_seq += 1
+            record = {'sequence': timeline_seq, 'at_epoch': time.time(),
+                      'elapsed_ms': elapsed_ms, **public_copy(event)}
+            timeline.append(record)
+            with timeline_file.open('a', encoding='utf-8') as file:
+                file.write(json.dumps(record, ensure_ascii=False) + '\n')
+        emit('network', mode=args.mode, elapsed_ms=elapsed_ms, **event)
+
+    tv.NETWORK_OBSERVER = observe_network
     tv.PROGRESS_OBSERVER = lambda progress: emit('progress', **progress)
     (args.run_dir / 'device-profile.json').write_text(
-        json.dumps(profile, ensure_ascii=False, indent=2), encoding='utf-8')
+        json.dumps(public_copy(profile), ensure_ascii=False, indent=2), encoding='utf-8')
     emit('device_profile', profile=profile,
          message=f"设备配置：{profile['label']} · 选择方式：{profile['selection']}")
     if args.new_ip:
@@ -317,7 +334,7 @@ def main():
                     'lifetime_seconds': lease.lifetime_seconds, 'lifetime_source': lease.lifetime_source,
                     'expires_at_epoch': time.time() + lease.seconds_left(),
                     'message': '本次接口请求和视频流使用此代理'}
-            (args.run_dir / 'proxy.json').write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding='utf-8')
+            (args.run_dir / 'proxy.json').write_text(json.dumps(public_copy(info), ensure_ascii=False, indent=2), encoding='utf-8')
         except ProxyError as error:
             emit('failure', error_type='ProxyError', message=str(error))
             emit('lifecycle', status='failed', mode=args.mode)
@@ -351,6 +368,13 @@ def main():
     finally:
         sys.settrace(None)
         threading.settrace(None)
+        paths = [event.get('path') for event in timeline if event.get('path')]
+        (args.run_dir / 'protocol-timeline.json').write_text(json.dumps({
+            'mode': args.mode, 'event_count': len(timeline),
+            'observed_paths': paths,
+            'events': timeline,
+            'comparison_note': '按同一视频、设备方案、清晰度和启动方式与抓包逐项比较；此文件不包含 URL、请求正文或凭据。'
+        }, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         emit('lifecycle', status=outcome, mode=args.mode, trace_events=EVENTS)
     return 0 if outcome == 'completed' else 1
 

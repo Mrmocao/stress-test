@@ -90,9 +90,16 @@ class TVProtocolTests(unittest.TestCase):
         self.assertEqual(media['audio_input'], 0)
         for result in ({'is_drm': True}, {'is_preview': True},
                        {'durl': [{'url': 'file:///private'}]},
-                       {'quality': 64, 'dash': {'video': [{'id': 80}], 'audio': [{}]}}):
+                       {'quality': 64, 'dash': {'video': [], 'audio': [{}]}}):
             with self.subTest(result=result), self.assertRaises(ValueError):
                 select_media(result)
+
+        fallback = select_media({'quality': 64, 'dash': {
+            'video': [{'id': 32, 'codecid': 7, 'base_url': 'https://cdn/32'}],
+            'audio': [{'bandwidth': 10, 'base_url': 'https://cdn/audio'}]}})
+        self.assertEqual(fallback['selection']['selected_quality'], 32)
+        self.assertEqual(fallback['selection']['reason'], 'lower-quality-fallback')
+        self.assertEqual(fallback['quality'], 32)
 
     def test_build_serial_only_for_captured_version(self):
         self.assertEqual(resolve_profile('demo', 'offline-android9')['common']['build_sn'], '29938492')
